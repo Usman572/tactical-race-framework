@@ -12,6 +12,7 @@ export default function AdminLayout() {
     { name: "Dashboard", path: "/admin", icon: "📊" },
     { name: "Users", path: "/admin/users", icon: "👥" },
     { name: "Partners", path: "/admin/partners", icon: "🤝" },
+    { name: "War Room", path: "/admin/war-room", icon: "📊" },
     { name: "Races", path: "/admin/races", icon: "🏁" },
     { name: "Requests", path: "/admin/requests", icon: "✋", badge: pendingRequests.length },
     { name: "Messages", path: "/messages", icon: "📩", badge: unreadCount },

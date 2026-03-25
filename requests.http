@@ -1,0 +1,90 @@
+### 
+# VS Code REST Client
+# Install extension: "REST Client" by Huachao Mao to use this file.
+# Click "Send Request" above each URL to test.
+
+@baseUrl = http://localhost:5000/api
+@authToken = {{login.response.body.token}}
+
+### ========================================
+### AUTHENTICATION
+### ========================================
+
+### 1. Register a New User (Change email to create multiple)
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "Test Partner",
+    "email": "partner1@test.com",
+    "password": "password123",
+    "role": "partner"
+}
+
+### 2. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "partner1@test.com",
+    "password": "password123"
+}
+
+### 3. Get Current User Profile (Protected)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}
+
+
+### ========================================
+### RACES (Requires Token from Login)
+### ========================================
+
+### 4. Get All Races (Public)
+GET {{baseUrl}}/races
+
+### 5. Create a Race (Partner/Admin Only)
+# @name createRace
+POST {{baseUrl}}/races
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "name": "Summer Beach Run",
+    "date": "2026-07-15",
+    "location": "Miami Beach",
+    "type": "Marathon"
+}
+
+### 6. Update a Race
+@raceId = {{createRace.response.body._id}}
+PUT {{baseUrl}}/races/{{raceId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "name": "Summer Beach Run - Updated",
+    "type": "Half-Marathon"
+}
+
+### 7. Join a Race
+POST {{baseUrl}}/races/{{raceId}}/join
+Authorization: Bearer {{authToken}}
+
+### 8. Delete a Race
+DELETE {{baseUrl}}/races/{{raceId}}
+Authorization: Bearer {{authToken}}
+
+
+### ========================================
+### USERS (Admin Only - Login as Admin first)
+### ========================================
+
+### 9. Get All Users
+GET {{baseUrl}}/users
+Authorization: Bearer {{authToken}}
+
+### 10. Delete a User (Replace ID manually)
+# DELETE {{baseUrl}}/users/REPLACE_WITH_USER_ID
+# Authorization: Bearer {{authToken}}
