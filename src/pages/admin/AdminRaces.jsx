@@ -98,9 +98,9 @@ export default function AdminRaces() {
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover/user:bg-blue-600 group-hover/user:text-white transition-all uppercase">
-                                                    {race.createdBy.name[0]}
+                                                    {(race.createdBy?.name || 'U')[0]}
                                                 </div>
-                                                <span className="text-xs font-bold text-slate-600">{race.createdBy.name}</span>
+                                                <span className="text-xs font-bold text-slate-600">{race.createdBy?.name || 'Unidentified'}</span>
                                             </Link>
                                         ) : (
                                             <span className="text-xs font-bold text-slate-400 italic">Unidentified</span>
@@ -113,7 +113,7 @@ export default function AdminRaces() {
                                         <div className="flex -space-x-3">
                                             {race.participants?.slice(0, 4).map((p, i) => (
                                                 <div key={i} className="h-8 w-8 rounded-xl border-2 border-white ring-1 ring-slate-100 bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase shadow-sm">
-                                                    {p.name[0]}
+                                                    {(p?.name || 'U')[0]}
                                                 </div>
                                             ))}
                                             {race.participants?.length > 4 && (

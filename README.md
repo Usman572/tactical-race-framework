@@ -1,100 +1,94 @@
-# RaceApp - Racing Event Management Platform
+# Circuit Quantum Framework 🌌
+**Elite Full-Stack Racing Event Management Platform**
 
-RaceApp is a modern, responsive web application for managing and participating in racing events. It serves three distinct user roles: **Racers**, **Partners** (Event Organizers), and **Admins**.
-
-The application features a premium, clean UI built with **React**, **Vite**, and **Tailwind CSS**.
+Circuit Quantum is a premium, tactical racing platform designed for high-stakes coordination and real-Time event management. Built for **Operatives**, **Partners**, and **Admins**.
 
 ---
 
-## 🚀 Features
+## 🚀 Premium Features
 
-### 🏁 Public (Racers)
-- **Browse Races**: View upcoming events in a clean, filterable table layout.
-- **Race Details**: Click on any race to see full details (Location, Date, Type).
-- **Registration**: Join races with a single click (simulated participation).
-- **User Dashboard**: See your joined races and profile.
+### 🎮 The Operative Experience (Gamification)
+- **Live XP & Leveling**: Gain experience by joining races, winning engagements, and coordinating in comms.
+- **Faction System**: Join elite teams like **Cyber Shadows** or **Neon Pulse**.
+- **Daily Recon Missions**: Dynamic daily challenges with unique XP rewards.
+- **Mission Certificates**: Shareable digital badges for every completed deployment.
 
-### 🤝 Partners (Organizers)
-- **Create Races**: dedicated form to publish new events.
-- **Manage Events**: Edit, delete, and track participants for your races.
-- **Partner Dashboard**: View analytics on your active races and total user engagement.
+### 📡 Tactical HUD & Telemetry
+- **Operative HUD (Header)**: Real-time tracking of XP, Level, and Mission Status.
+- **Latency Telemetry (Ping)**: Built-in performance monitoring for API interactions.
+- **Matrix Breach Detection**: Advanced tactical error boundaries for system resilience.
+- **Comms Channel**: Real-time Socket.io bridge for team coordination.
 
-### ⚡ Admin (Platform Managers)
-- **Global Oversight**: Manage all users, partners, and races across the platform.
-- **User Management**: View and manage all registered accounts.
-- **Platform Analytics**: High-level stats on platform growth and activity.
+### 🗺 Territory Map System
+- **Sector Filtering**: Sort tactical engagements by **Sector**, **Race Type**, and **Distance**.
+- **Tactical Map**: Leaflet-based territory visualization with faction-themed markers.
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Frontend**: React.js (Vite)
-- **Styling**: Tailwind CSS (Direct styling, no custom themes)
-- **Routing**: React Router DOM (v6)
-- **State Management**: React Context API (`AuthContext`, `RaceContext`)
-- **Persistence**: `localStorage` (Simulates a backend database)
-- **Icons**: React Icons / Emoji Badges
+### Frontend
+- **Framework**: React.js (Vite)
+- **Animation**: Framer Motion (Fluid UI transitions)
+- **Real-Time**: Socket.io-client
+- **Maps**: React Leaflet
+- **Performance**: Custom Telemetry Instrumentation
+
+### Backend
+- **Server**: Node.js & Express
+- **Database**: MongoDB (Mongoose)
+- **Real-Time**: Socket.io
+- **Security**: JWT Authentication & Role-based Access
 
 ---
 
-## 📦 Installation & Setup
+## 📦 Installation & Deployment
 
-Follow these steps to run the project locally.
-
-### 1. Clone the Repository
+### 1. Clone the Matrix
 ```bash
-git clone <repository-url>
-cd race-app
+git clone https://github.com/Usman572/tactical-race-framework.git
+cd tactical-race-framework
 ```
 
-### 2. Install Dependencies
-Ensure you have Node.js installed.
+### 2. Initialize Core Systems
+The framework is a monorepo. Install dependencies for both the frontend and backend:
 ```bash
+# Install root orchestration
 npm install
+
+# Install backend dependencies
+cd backend && npm install && cd ..
 ```
 
-### 3. Run the Development Server
+### 3. Configure Environment
+Create a `.env` file in the `backend` folder with:
+```env
+PORT=5005
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+```
+
+### 4. Initiate Deployment (Local)
+Run the root command to start both the Frontend Matrix and Backend Reactor:
 ```bash
 npm run dev
 ```
 
-### 4. Open in Browser
-Visit `http://localhost:5173` (or the URL shown in your terminal).
+---
+
+## 🔑 Operative Credentials
+
+| Role | Email Format | Access Level |
+| :--- | :--- | :--- |
+| **Admin** | `admin@race.com` | High-level oversignt & platform control. |
+| **Partner** | `partner@race.com` | Event creation and sector management. |
+| **Racer** | Any other email | Engagement participation & XP tracking. |
 
 ---
 
-## 🔑 Demo Credentials
+## 📝 Performance Notes
 
-Authenticatoin is simulated. You can use any email to register, or use these pre-defined flows:
+The application uses **Quantum Telemetry** to track API latency. Look for the **Ping** indicator in the top-right HUD to monitor your connection to the Matrix.
 
-### **Admin Access**
-- **Email**: `admin@race.com` (or any email containing "admin")
-- **Role**: Select **Admin** during signup/login.
-- **Access**: Full platform control.
-
-### **Partner Access**
-- **Email**: `partner@race.com` (or any email containing "partner")
-- **Role**: Select **Partner** during signup/login.
-- **Access**: Create and manage own races.
-
-### **Racer Access**
-- **Email**: Any other email (e.g., `user@test.com`)
-- **Role**: Select **Racer** during signup.
-- **Access**: Join races and view public events.
-
----
-
-## 🎨 Project Structure
-
-- `src/layouts/`: Layout wrappers for Public, Partner, and Admin views.
-- `src/pages/`: Individual page components (Home, Login, Dashboard, etc.).
-- `src/context/`: Global state (Auth, Race data).
-- `src/components/`: Reusable UI components.
-- `index.css`: Global Tailwind directives and reset.
-
----
-
-## 📝 Notes
-
-- **Persistence**: Data (users, races) is saved to your browser's `Local Storage`. To reset the app, clear your browser data for the site.
-- **Design**: The app uses a "Direct Styling" approach with Tailwind, eschewing complex theme variables for straightforward, maintainable utility classes.
+> [!IMPORTANT]
+> This framework is designed for elite performance. The grid is active. Deployment is green.

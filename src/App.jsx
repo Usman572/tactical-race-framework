@@ -14,7 +14,8 @@ import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import PartnerRaces from "./pages/partner/PartnerRaces";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
-import AdminPartners from "./pages/admin/AdminPartners";
+import AdminPartners from './pages/admin/AdminPartners';
+import WarRoom from './pages/admin/WarRoom';
 import AdminRaces from "./pages/admin/AdminRaces";
 import AdminCreateRace from "./pages/admin/AdminCreateRace";
 import AdminEditRace from "./pages/admin/AdminEditRace";
@@ -78,6 +79,7 @@ function App() {
                     <Route index element={<AdminDashboard />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="partners" element={<AdminPartners />} />
+                    <Route path="war-room" element={<WarRoom />} />
                     <Route path="races" element={<AdminRaces />} />
                     <Route path="races/new" element={<AdminCreateRace />} />
                     <Route path="races/:id/edit" element={<AdminEditRace />} />

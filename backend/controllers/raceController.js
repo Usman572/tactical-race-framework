@@ -54,6 +54,7 @@ const createRace = async (req, res) => {
             console.error('Socket emit for race_created failed');
         }
 
+        await race.populate('createdBy', 'name email role slug');
         res.status(201).json(race);
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
@@ -77,6 +78,7 @@ const updateRace = async (req, res) => {
             { name, location, date, type, status, trackLength, sector, bannerImage },
             { new: true, runValidators: true }
         );
+        await updatedRace.populate('createdBy', 'name email role slug');
         res.json(updatedRace);
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
