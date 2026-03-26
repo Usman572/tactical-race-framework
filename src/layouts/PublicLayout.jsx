@@ -13,6 +13,7 @@ import XPTracker from "../components/XPTracker";
 import DailyMissions from "../components/DailyMissions";
 import LatencyIndicator from "../components/LatencyIndicator";
 import ErrorBoundary from "../components/ErrorBoundary";
+import GlobalMissionAlert from "../components/GlobalMissionAlert";
 import { API_BASE_URL } from "../config/api";
 
 export default function PublicLayout() {
@@ -273,6 +274,9 @@ export default function PublicLayout() {
           )}
         </div>
       </header>
+
+      {/* Global Mission Pulse */}
+      <GlobalMissionAlert />
 
       {/* Spacer for sticky header */}
       <div className="h-[90px]" />

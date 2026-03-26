@@ -52,6 +52,7 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/missions', require('./routes/missionRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
 
 // --------------------
 // Test route
