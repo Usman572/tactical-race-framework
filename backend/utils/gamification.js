@@ -10,8 +10,28 @@ const calculateLevel = (xp) => {
 const awardXP = async (user, amount, reason) => {
     if (!user) return;
 
+    // Check for active Global XP Boosts
+    let multiplier = 1;
+    try {
+        const GlobalEvent = require('../models/GlobalEvent');
+        const activeBoosts = await GlobalEvent.find({
+            type: 'XP_BOOST',
+            isActive: true,
+            startTime: { $lte: new Date() },
+            endTime: { $gte: new Date() }
+        });
+        
+        if (activeBoosts.length > 0) {
+            multiplier = Math.max(...activeBoosts.map(b => b.multiplier || 1));
+        }
+    } catch (err) {
+        console.error('Multiplier check failed', err);
+    }
+
+    const finalAmount = Math.round(amount * multiplier);
+
     const oldLevel = user.level || calculateLevel(user.xp || 0);
-    user.xp = (user.xp || 0) + amount;
+    user.xp = (user.xp || 0) + finalAmount;
     const newLevel = calculateLevel(user.xp);
 
     user.level = newLevel;
@@ -43,7 +63,8 @@ const awardXP = async (user, amount, reason) => {
         io.to(user._id.toString()).emit('xp_update', {
             xp: user.xp,
             level: user.level,
-            gain: amount,
+            gain: finalAmount,
+            multiplier, // Pass the multiplier for frontend feedback
             reason
         });
     } catch (err) {}
