@@ -4,6 +4,28 @@ const Notification = require('../models/Notification.js');
 const JoinRequest = require('../models/JoinRequest.js');
 const socketManager = require('../socket');
 
+const getRaceById = async (req, res) => {
+    try {
+        const race = await Race.findById(req.params.id)
+            .populate('participants', 'name email slug faction profilePicture')
+            .populate('createdBy', 'name email role slug profilePicture')
+            .populate('checkIns', 'name profilePicture slug faction');
+
+        if (!race) return res.status(404).json({ message: 'Race not found' });
+
+        // Check for linked Global Events
+        const GlobalEvent = require('../models/GlobalEvent');
+        const linkedEvent = await GlobalEvent.findOne({ 
+            linkedRaceId: race._id,
+            isActive: true 
+        });
+
+        res.json({ ...race._doc, linkedEvent });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 const getRaces = async (req, res) => {
     try {
         const races = await Race.find()
@@ -468,6 +490,42 @@ const completeRace = async (req, res) => {
             }
         }
 
+        // Check for linked High-Stakes Event
+        const GlobalEvent = require('../models/GlobalEvent');
+        const linkedEvent = await GlobalEvent.findOne({ linkedRaceId: race._id, isActive: true });
+
+        if (linkedEvent && Array.isArray(winners)) {
+            // Faction Dominance Logic: Top 3 finishers' factions get a boost
+            const winningFactions = winners
+                .slice(0, 3)
+                .map(w => w.user?.faction)
+                .filter(f => f && f !== 'None');
+            
+            const dominantFaction = winningFactions[0]; // Winner's faction is dominant
+
+            if (dominantFaction) {
+                // Award bonus XP to all participants of the dominant faction in this race
+                const factionParticipants = await User.find({
+                    _id: { $in: race.participants },
+                    faction: dominantFaction
+                });
+
+                for (const fUser of factionParticipants) {
+                    await awardXP(fUser, 100, `Faction Dominance: ${dominantFaction} Victory`);
+                }
+
+                // Global broadcast of Faction Victory
+                try {
+                    const io = socketManager.getIO();
+                    io.emit('faction_victory', { 
+                        faction: dominantFaction, 
+                        raceName: race.name,
+                        eventId: linkedEvent.id 
+                    });
+                } catch (err) {}
+            }
+        }
+
         // Emit completion
         try {
             const io = socketManager.getIO();
@@ -485,6 +543,7 @@ const completeRace = async (req, res) => {
 
 module.exports = { 
     getRaces, 
+    getRaceById,
     createRace, 
     updateRace, 
     deleteRace, 

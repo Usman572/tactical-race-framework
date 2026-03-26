@@ -107,6 +107,23 @@ export function RaceProvider({ children }) {
         }
     };
 
+    const getRaceById = async (id) => {
+        try {
+            const response = await measureFetch(`${API_BASE_URL}/api/races/${id}`, {
+                headers: user?.token ? { 'Authorization': `Bearer ${user.token}` } : {}
+            });
+            const data = await response.json();
+            if (response.ok) {
+                // Update local races list if it's already there
+                setRaces(prev => prev.map(r => r._id === id ? data : r));
+                return { success: true, data };
+            }
+            return { success: false, message: data.message };
+        } catch (error) {
+            return { success: false, message: "Network error" };
+        }
+    };
+
     const fetchPendingRequests = async () => {
         try {
             const response = await measureFetch(`${API_BASE_URL}/api/races/requests/pending`, {
@@ -340,7 +357,7 @@ export function RaceProvider({ children }) {
 
     return (
         <RaceContext.Provider value={{ 
-            races, filteredRaces, filters, setFilters, fetchRaces, addRace, updateRace, deleteRace, joinRace, leaveRace, isLoading,
+            races, filteredRaces, filters, setFilters, fetchRaces, getRaceById, addRace, updateRace, deleteRace, joinRace, leaveRace, isLoading,
             pendingRequests, fetchPendingRequests, myRequests, fetchMyRequests, requestToJoin, approveRequest, rejectRequest,
             unreadCount, fetchUnreadCount,
             checkIn, startCountdown, completeRace

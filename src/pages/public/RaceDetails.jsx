@@ -4,23 +4,38 @@ import { useAuth } from "../../context/AuthContext";
 import { useState } from "react";
 import CommsChannel from "../../components/CommsChannel";
 import MissionCertificate from "../../components/MissionCertificate";
+import FactionDominance from "../../components/FactionDominance";
+import { useEffect } from "react";
 
 export default function RaceDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { races, requestToJoin, leaveRace, deleteRace, myRequests, isLoading: racesLoading } = useRaces();
+    const { getRaceById, requestToJoin, leaveRace, deleteRace, myRequests, isLoading: racesLoading } = useRaces();
     const { user } = useAuth();
+    const [race, setRace] = useState(null);
     const [isRequesting, setIsRequesting] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [joinMessage, setJoinMessage] = useState("");
+    const [isLocalLoading, setIsLocalLoading] = useState(true);
 
-    const race = races.find(r => r._id === id);
+    useEffect(() => {
+        const fetchRace = async () => {
+            setIsLocalLoading(true);
+            const res = await getRaceById(id);
+            if (res.success) {
+                setRace(res.data);
+            }
+            setIsLocalLoading(false);
+        };
+        fetchRace();
+    }, [id]);
+
     const joined = race?.participants?.some(p => p._id === user?.id || p === user?.id);
     const hasPendingRequest = myRequests?.some(r => r.race?._id === id && r.status === 'Pending');
     const canManage = user?.role === 'admin' || (race?.createdBy === user?.id || race?.createdBy?._id === user?.id);
 
-    if (racesLoading) return (
+    if (isLocalLoading) return (
         <div className="min-h-screen flex items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
@@ -87,12 +102,36 @@ export default function RaceDetails() {
                     </div>
                 </div>
 
+                {race.linkedEvent && (
+                    <div className="bg-gradient-to-r from-red-600/10 via-black to-red-600/10 border-b border-red-500/20 px-10 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">High-Stakes Event Active</span>
+                                <h3 className="text-sm font-black text-white uppercase tracking-tight">{race.linkedEvent.title}</h3>
+                            </div>
+                        </div>
+                        {race.linkedEvent.type === 'XP_BOOST' && (
+                            <div className="bg-red-500/10 border border-red-500/30 px-3 py-1 rounded-full">
+                                <span className="text-[10px] font-black text-red-500 uppercase">x{race.linkedEvent.multiplier} XP Multiplier</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="p-10">
                     {race.status === 'Completed' && joined && (
                         <div className="mb-12">
                             <MissionCertificate race={race} user={user} />
                         </div>
                     )}
+
+                    {race.linkedEvent && (
+                        <div className="mb-12">
+                            <FactionDominance participants={race.participants} />
+                        </div>
+                    )}
+
                     <div className="mb-12">
                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Mission Participants</h4>
                         {race.participants?.length > 0 ? (
