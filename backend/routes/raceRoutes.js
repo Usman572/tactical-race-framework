@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
     getRaces, 
+    getRaceById,
     createRace, 
     updateRace, 
     deleteRace, 
@@ -31,6 +32,7 @@ const softProtect = (req, res, next) => {
 };
 
 router.get('/', getRaces);
+router.get('/:id', getRaceById);
 router.post('/', softProtect, createRace);      // public, but captures createdBy if logged in
 router.put('/:id', protect, updateRace);
 router.delete('/:id', protect, deleteRace);

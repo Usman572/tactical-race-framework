@@ -17,7 +17,7 @@ const getActiveEvents = async (req, res) => {
 
 const createEvent = async (req, res) => {
     try {
-        const { title, description, type, multiplier, startTime, endTime, id } = req.body;
+        const { title, description, type, multiplier, startTime, endTime, id, linkedRaceId } = req.body;
 
         const event = await GlobalEvent.create({
             title,
@@ -26,7 +26,8 @@ const createEvent = async (req, res) => {
             multiplier,
             startTime: startTime || new Date(),
             endTime,
-            id
+            id,
+            linkedRaceId
         });
 
         // Broadcast to all operatives

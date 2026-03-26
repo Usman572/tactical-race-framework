@@ -13,6 +13,7 @@ const globalEventSchema = mongoose.Schema(
         startTime: { type: Date, default: Date.now },
         endTime: { type: Date, required: true },
         isActive: { type: Boolean, default: true },
+        linkedRaceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Race' }, // Added target race
         id: { type: String, unique: true, required: true } // Tactical Slug, e.g., 'neon-pulse-2026'
     },
     { timestamps: true }
