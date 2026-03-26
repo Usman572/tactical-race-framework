@@ -6,6 +6,28 @@ import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../../config/api";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Scrambled Text for Signal Encryption Vibe
+const ScrambledText = ({ text }) => {
+    const [display, setDisplay] = useState('');
+    const chars = '!<>-_\\/[]{}—=+*^?#________';
+
+    useEffect(() => {
+        let iteration = 0;
+        const interval = setInterval(() => {
+            setDisplay(text?.split('').map((char, index) => {
+                if (index < iteration) return text[index];
+                return chars[Math.floor(Math.random() * chars.length)];
+            }).join(''));
+
+            if (iteration >= text?.length) clearInterval(interval);
+            iteration += 1 / 2;
+        }, 30);
+        return () => clearInterval(interval);
+    }, [text]);
+
+    return <span>{display}</span>;
+};
+
 export default function Messages() {
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +63,11 @@ export default function Messages() {
                 setMessages(prev => [newMsg, ...prev]);
             };
             socket.on('new_notification', handleNewMsg);
-            return () => socket.off('new_notification', handleNewMsg);
+            socket.on('new_private_message', handleNewMsg);
+            return () => {
+                socket.off('new_notification', handleNewMsg);
+                socket.off('new_private_message', handleNewMsg);
+            };
         }
     }, [socket]);
 
@@ -203,38 +229,58 @@ export default function Messages() {
 
         setIsSending(true);
         try {
-            const formData = new FormData();
-            formData.append('recipient', thread.senderId);
-            if (thread.lastRaceId) {
+            // Check if this is a private message or a notification relay
+            const isPrivate = !thread.lastRaceId;
+
+            if (isPrivate) {
+                const res = await fetch(`${API_BASE_URL}/api/chat/private`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${user.token}`
+                    },
+                    body: JSON.stringify({
+                        recipientId: thread.senderId,
+                        text: replyText
+                    })
+                });
+
+                if (res.ok) {
+                    const newMsg = await res.json();
+                    setMessages(prev => [newMsg, ...prev]);
+                    setReplyText("");
+                }
+            } else {
+                const formData = new FormData();
+                formData.append('recipient', thread.senderId);
                 formData.append('raceId', thread.lastRaceId);
-            }
 
-            if (audioBlob) {
-                formData.append('media', audioBlob, 'voice-note.webm');
-            } else if (selectedFile) {
-                formData.append('media', selectedFile);
-            }
+                if (audioBlob) {
+                    formData.append('media', audioBlob, 'voice-note.webm');
+                } else if (selectedFile) {
+                    formData.append('media', selectedFile);
+                }
 
-            if (replyText.trim()) {
-                formData.append('message', replyText);
-            }
+                if (replyText.trim()) {
+                    formData.append('message', replyText);
+                }
 
-            const res = await fetch(`${API_BASE_URL}/api/notifications`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${user.token}`
-                },
-                body: formData
-            });
+                const res = await fetch(`${API_BASE_URL}/api/notifications`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`
+                    },
+                    body: formData
+                });
 
-            if (res.ok) {
-                const newMsg = await res.json();
-                setMessages(prev => [newMsg, ...prev]);
-                setReplyText("");
-                setAudioBlob(null);
-                setSelectedFile(null);
-                setFileType(null);
-                // Real-time update will handle the rest
+                if (res.ok) {
+                    const newMsg = await res.json();
+                    setMessages(prev => [newMsg, ...prev]);
+                    setReplyText("");
+                    setAudioBlob(null);
+                    setSelectedFile(null);
+                    setFileType(null);
+                }
             }
         } catch (err) {
             console.error(err);
@@ -286,13 +332,14 @@ export default function Messages() {
         if (!Array.isArray(msgs)) return [];
         const groups = {};
         msgs.forEach(m => {
-            const senderId = m.sender?._id || m.sender;
+            // Support both Notification (sender/recipient) and ChatMessage (user/recipient)
+            const senderId = m.user?._id || m.user || m.sender?._id || m.sender;
             const recipientId = m.recipient?._id || m.recipient;
 
             // Determine the "other" person
             const isSentByMe = senderId === user.id;
             const otherId = isSentByMe ? recipientId : senderId;
-            const otherUser = isSentByMe ? m.recipient : m.sender;
+            const otherUser = isSentByMe ? m.recipient : (m.user || m.sender);
 
             if (!otherId) return;
 
@@ -301,8 +348,8 @@ export default function Messages() {
                     senderId: otherId,
                     senderName: otherUser?.name || 'Operative',
                     senderAvatar: otherUser?.profilePicture,
-                    senderRank: otherUser?.rank || 'Rookie', // Added senderRank
-                    lastMessage: m.message,
+                    senderRank: otherUser?.rank || 'Rookie',
+                    lastMessage: m.message || m.text,
                     lastDate: m.createdAt,
                     unreadCount: 0,
                     messages: [],
@@ -315,7 +362,9 @@ export default function Messages() {
                 groups[otherId].unreadCount++;
             }
         });
-        return Object.values(groups).sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
+        return Object.values(groups)
+            .filter(t => t.senderId !== user.id) // Ensure we don't show self as a thread
+            .sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
     };
 
     const threads = groupIntoThreads(messages);
@@ -464,7 +513,13 @@ export default function Messages() {
                                                         </div>
                                                     )}
 
-                                                    <p className="text-[13px] font-medium leading-relaxed">{msg.message}</p>
+                                                    <p className="text-[13px] font-medium leading-relaxed">
+                                                        {msg.isEncrypted || !msg.type || msg.type === 'Message' ? (
+                                                            <ScrambledText text={msg.message || msg.text} />
+                                                        ) : (
+                                                            (msg.message || msg.text)
+                                                        )}
+                                                    </p>
 
                                                     {msg.type === 'JoinRequest' && msg.joinRequest && (
                                                         <div className={`mt-4 p-4 rounded-2xl border ${!msg.read ? 'bg-white/10 border-white/20' : 'bg-slate-50 border-slate-100'}`}>
