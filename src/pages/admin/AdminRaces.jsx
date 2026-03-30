@@ -30,7 +30,7 @@ export default function AdminRaces() {
         <div className="space-y-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-4xl font-black tracking-tighter text-black uppercase">
+                    <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-black uppercase">
                         Engagement <span className="text-blue-600">Register</span>
                     </h1>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">Operational Readiness & Logistics</p>
@@ -87,7 +87,7 @@ export default function AdminRaces() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-10 lg:gap-16">
+                                <div className="flex flex-wrap items-center gap-6 sm:gap-10 lg:gap-16">
                                     {/* Originator */}
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Originator</span>
@@ -138,7 +138,7 @@ export default function AdminRaces() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-3 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100 lg:border-transparent w-full lg:w-auto">
                                         <Link
                                             to={`/admin/races/${race._id}/edit`}
                                             className="bg-slate-50 hover:bg-black text-slate-400 hover:text-white p-3 rounded-2xl border border-slate-100 transition-all active:scale-95 shadow-sm"

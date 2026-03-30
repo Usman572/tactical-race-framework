@@ -78,7 +78,7 @@ export default function AdminUsers() {
   return (
     <div className="space-y-10">
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-black tracking-tighter text-black uppercase">
+        <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-black uppercase">
           Agent <span className="text-blue-600">Roster</span>
         </h1>
         <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">Personnel Management & Authorization</p>
@@ -95,7 +95,7 @@ export default function AdminUsers() {
           >
             <div className="absolute inset-0 bg-white rounded-2xl -z-10 shadow-sm border border-slate-100 group-hover:border-blue-500/30 transition-all" />
 
-            <div className="p-6 flex items-center justify-between">
+            <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div className="flex items-center gap-6">
                 <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-xl font-black text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all overflow-hidden">
                   {user.profilePicture ? (
@@ -127,7 +127,7 @@ export default function AdminUsers() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-3 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity ml-14 sm:ml-0">
                 <button
                   onClick={() => handleMessageUser(user._id || user.id)}
                   className="bg-slate-50 hover:bg-blue-600 text-slate-400 hover:text-white p-3 rounded-xl border border-slate-100 transition-all active:scale-95 shadow-sm"

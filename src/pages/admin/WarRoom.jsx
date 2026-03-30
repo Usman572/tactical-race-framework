@@ -50,13 +50,13 @@ export default function WarRoom() {
     );
 
     return (
-        <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-white">
-            <header className="flex justify-between items-end">
+        <div className="p-4 sm:p-8 space-y-8 bg-slate-950 min-h-screen text-white w-full overflow-hidden">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase">War Room</h1>
+                    <h1 className="text-3xl sm:text-4xl font-black italic tracking-tighter uppercase">War Room</h1>
                     <p className="text-blue-400 font-bold tracking-widest text-xs mt-2 uppercase">Platform Strategic Command</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                     <div className="text-2xl font-black">{summary?.summary.activeOperatives}</div>
                     <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Active Operatives (24h)</div>
                 </div>
@@ -82,11 +82,12 @@ export default function WarRoom() {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full min-w-0">
                 {/* Faction Power Distribution */}
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 p-8 rounded-[2.5rem] h-[450px]">
-                    <h3 className="text-lg font-black uppercase tracking-wider mb-8">Faction Power Distribution (XP)</h3>
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 p-4 sm:p-8 rounded-3xl sm:rounded-[2.5rem] h-[350px] sm:h-[450px] min-w-0">
+                    <h3 className="text-sm sm:text-lg font-black uppercase tracking-wider mb-4 sm:mb-8">Faction Power Distribution (XP)</h3>
+                    <div className="w-full h-[calc(100%-3rem)] min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
                                 data={summary?.factions}
@@ -108,12 +109,14 @@ export default function WarRoom() {
                             <Legend verticalAlign="bottom" height={36}/>
                         </PieChart>
                     </ResponsiveContainer>
+                    </div>
                 </div>
 
                 {/* Race Deployment Trends */}
-                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 p-8 rounded-[2.5rem] h-[450px]">
-                    <h3 className="text-lg font-black uppercase tracking-wider mb-8">Deployment Velocity (30d)</h3>
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 p-4 sm:p-8 rounded-3xl sm:rounded-[2.5rem] h-[350px] sm:h-[450px] min-w-0 overflow-hidden">
+                    <h3 className="text-sm sm:text-lg font-black uppercase tracking-wider mb-4 sm:mb-8">Deployment Velocity (30d)</h3>
+                    <div className="w-full h-[calc(100%-3rem)] min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={trends}>
                             <defs>
                                 <linearGradient id="colorWave" x1="0" y1="0" x2="0" y2="1">
@@ -143,6 +146,7 @@ export default function WarRoom() {
                             />
                         </AreaChart>
                     </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 

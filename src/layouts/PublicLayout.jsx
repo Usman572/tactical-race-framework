@@ -187,7 +187,7 @@ export default function PublicLayout() {
             </div>
           </Link>
 
-          <nav className="hidden xl:flex items-center gap-6 ml-4">
+          <nav className="hidden lg:flex items-center gap-6 ml-4">
             <Link to="/" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">Home</Link>
             <Link to="/leaderboard" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">Leaderboard</Link>
             <Link to="/races" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">Races</Link>
@@ -195,48 +195,47 @@ export default function PublicLayout() {
         </div>
 
         {/* Center Section: Global Search */}
-        <div className="flex-1 max-w-xl mx-8 relative group">
+        <div className="hidden md:flex flex-1 max-w-xl mx-8 relative group">
           <GlobalSearch />
         </div>
 
-        {/* Right Section: Tactical HUD */}
-        <div className="flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-3">
           {user && (
             <div className="flex items-center gap-4 bg-slate-50/50 backdrop-blur-md rounded-2xl border border-slate-100 p-1.5 pr-4 shadow-sm hover:border-blue-500/30 transition-all group">
-               <XPTracker variant="minimal" />
-               
-               <div className="w-px h-6 bg-slate-200" />
-               
-               <div className="flex items-center gap-1">
-                 <Link
-                   to="/messages"
-                   className="relative p-2 hover:bg-white hover:text-blue-600 rounded-xl transition-all active:scale-90 text-slate-400"
-                   title="Signal Hub"
-                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                   </svg>
-                   {unreadCount > 0 && (
-                     <span className="absolute top-0 right-0 bg-red-600 text-white text-[7px] font-black px-1 rounded-full ring-2 ring-white">
-                       {unreadCount}
-                     </span>
-                   )}
-                 </Link>
+              <XPTracker variant="minimal" />
 
-                 {user.role === 'admin' && (
-                   <Link
-                     to="/admin"
-                     className="p-2 hover:bg-black hover:text-white rounded-xl transition-all active:scale-90 text-slate-400"
-                     title="Command Hub"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                       <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-                     </svg>
-                   </Link>
-                 )}
-                 <ThemeToggle />
-                 <LatencyIndicator />
-               </div>
+              <div className="w-px h-6 bg-slate-200" />
+
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/messages"
+                  className="relative p-2 hover:bg-white hover:text-blue-600 rounded-xl transition-all active:scale-90 text-slate-400"
+                  title="Signal Hub"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-600 text-white text-[7px] font-black px-1 rounded-full ring-2 ring-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin"
+                    className="p-2 hover:bg-black hover:text-white rounded-xl transition-all active:scale-90 text-slate-400"
+                    title="Command Hub"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                  </Link>
+                )}
+                <ThemeToggle />
+                <LatencyIndicator />
+              </div>
             </div>
           )}
 
@@ -249,18 +248,18 @@ export default function PublicLayout() {
                     <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center text-xs">
-                        {user.name?.[0] || 'U'}
+                      {user.name?.[0] || 'U'}
                     </div>
                   )}
                 </div>
-                <div className="text-left hidden lg:block">
+                <div className="text-left hidden xl:block">
                   <div className="text-[7px] font-black text-blue-500 uppercase tracking-widest leading-none mb-0.5 opacity-60">Operative</div>
                   <div className="text-[11px] font-black tracking-tight text-slate-900 leading-none">{user.name}</div>
                 </div>
               </Link>
               <button
                 onClick={logout}
-                className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-600 transition-all"
+                className="hidden sm:flex w-8 h-8 items-center justify-center text-slate-300 hover:text-red-600 transition-all"
                 title="Disconnect"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
@@ -295,6 +294,38 @@ export default function PublicLayout() {
         </AnimatePresence>
       </main>
 
+      {/* Mobile Command Bridge (Bottom Dock) */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-2xl border-t border-slate-200 px-6 py-4 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        <Link to="/" className={`flex flex-col items-center gap-1 ${location.pathname === '/' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+          <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
+        </Link>
+        <Link to="/races" className={`flex flex-col items-center gap-1 ${location.pathname === '/races' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20" /><circle cx="12" cy="12" r="10" /></svg>
+          <span className="text-[8px] font-black uppercase tracking-widest">Races</span>
+        </Link>
+        <Link to="/messages" className={`flex flex-col items-center gap-1 relative ${location.pathname === '/messages' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[7px] font-black px-1 rounded-full ring-2 ring-white">
+              {unreadCount}
+            </span>
+          )}
+          <span className="text-[8px] font-black uppercase tracking-widest">Signals</span>
+        </Link>
+        {user?.role === 'admin' ? (
+          <Link to="/admin" className={`flex flex-col items-center gap-1 ${location.pathname.startsWith('/admin') ? 'text-red-600' : 'text-slate-400 opacity-60'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+            <span className="text-[8px] font-black uppercase tracking-widest">Command</span>
+          </Link>
+        ) : (
+          <Link to="/leaderboard" className={`flex flex-col items-center gap-1 ${location.pathname === '/leaderboard' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
+            <span className="text-[8px] font-black uppercase tracking-widest">Rank</span>
+          </Link>
+        )}
+      </nav>
+
       {user && <DailyMissions />}
 
       {/* Live Ticker */}
@@ -308,11 +339,11 @@ export default function PublicLayout() {
             </div>
             <span className="font-black text-xs uppercase tracking-[0.2em] opacity-40">Elite Circuit Framework © 2026</span>
           </div>
-          <div className="flex gap-8">
+          {/* <div className="flex gap-8">
             <a href="#" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Protocol</a>
             <a href="#" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Security</a>
             <a href="#" className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">Telemetry</a>
-          </div>
+          </div> */}
         </div>
       </footer>
     </div>
