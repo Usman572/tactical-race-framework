@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { subscribeToTelemetry } from '../utils/telemetry';
 import { motion } from 'framer-motion';
 
-export default function LatencyIndicator() {
+export default function LatencyIndicator({ variant = "default" }) {
     const [latency, setLatency] = useState(0);
 
     useEffect(() => {
@@ -17,9 +17,11 @@ export default function LatencyIndicator() {
         return 'text-red-500';
     };
 
+    const isPill = variant === "pill";
+    
     return (
         <div 
-            className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 pointer-events-none group"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border pointer-events-none group transition-all duration-300 ${isPill ? 'bg-slate-900 border-slate-800 shadow-lg' : 'bg-white/5 border-white/5'}`}
             title="Real-time Matrix Latency"
         >
             <div className="flex gap-0.5">
@@ -32,8 +34,8 @@ export default function LatencyIndicator() {
                     />
                 ))}
             </div>
-            <span className={`text-[8px] font-black uppercase tracking-widest ${getColor(latency)}`}>
-                Ping: {latency}ms
+            <span className={`text-[8px] font-black uppercase tracking-widest ${getColor(latency)} ${isPill ? 'block' : 'hidden sm:block'}`}>
+                {isPill ? `${latency}ms` : `Ping: ${latency}ms`}
             </span>
         </div>
     );

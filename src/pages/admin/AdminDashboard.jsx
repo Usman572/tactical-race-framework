@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     <div className="space-y-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-black tracking-tighter text-black uppercase">
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-black uppercase">
             Command <span className="text-blue-600">Hub</span>
           </h1>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">Sector Synchronization & Telemetry</p>
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 rounded-3xl -z-10 shadow-xl shadow-slate-200/50 group-hover:shadow-2xl transition-all border border-slate-100" />
 
-            <div className="p-8">
+            <div className="p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-xl shadow-lg shadow-current/20`}>
                   {stat.icon}

@@ -386,9 +386,9 @@ export default function Messages() {
     );
 
     return (
-        <div className="h-[calc(100vh-160px)] max-w-7xl mx-auto flex bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden mb-10">
+        <div className="h-[calc(100vh-120px)] md:h-[calc(100vh-160px)] max-w-[100vw] sm:max-w-7xl mx-auto flex bg-white sm:rounded-[2.5rem] shadow-2xl sm:border border-slate-100 overflow-hidden sm:mb-10 w-full relative">
             {/* Sidebar: Conversation List */}
-            <div className="w-80 md:w-96 border-r border-slate-100 flex flex-col bg-slate-50/30">
+            <div className={`w-full md:w-96 border-r border-slate-100 flex-col bg-slate-50/30 ${selectedThread ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-6 border-b border-slate-100 bg-white">
                     <div className="flex items-center justify-between mb-4">
                         <div>
@@ -447,13 +447,20 @@ export default function Messages() {
             </div>
 
             {/* Main Area: Chat Window */}
-            <div className="flex-1 flex flex-col bg-white">
+            <div className={`flex-1 flex-col bg-white ${!selectedThread ? 'hidden md:flex' : 'flex'}`}>
                 {activeContact ? (
                     <>
                         {/* Chat Header */}
-                        <div className="px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md z-10">
-                            <div className="flex items-center gap-4">
-                                <Link to={`/profile/${activeContact.senderId}`} className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-black border border-blue-200 overflow-hidden hover:scale-105 transition-transform">
+                        <div className="px-4 md:px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md z-10 sticky top-0">
+                            <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+                                <button
+                                    onClick={() => setSelectedThread(null)}
+                                    className="md:hidden p-2 -ml-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+                                    title="Back to Inbox"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                </button>
+                                <Link to={`/profile/${activeContact.senderId}`} className="w-10 h-10 shrink-0 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-black border border-blue-200 overflow-hidden hover:scale-105 transition-transform">
                                     {activeContact.senderAvatar ? <img src={activeContact.senderAvatar} className="w-full h-full object-cover" /> : activeContact.senderName[0]}
                                 </Link>
                                 <div>
@@ -478,7 +485,7 @@ export default function Messages() {
                         </div>
 
                         {/* Messages Content */}
-                        <div className="flex-1 overflow-y-auto p-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5 transition-all">
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5 transition-all">
                             <AnimatePresence mode="popLayout">
                                 {activeMessages.map((msg, i) => {
                                     const isMe = (msg.sender?._id || msg.sender) === user.id;
@@ -574,9 +581,9 @@ export default function Messages() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-6 border-t border-slate-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
+                        <div className="p-4 md:p-6 border-t border-slate-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.02)] relative z-20">
                             {selectedFile && (
-                                <div className="max-w-5xl mx-auto mb-4 p-3 bg-blue-50 rounded-2xl flex items-center justify-between border border-blue-100 italic text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                                <div className="max-w-5xl mx-auto mb-4 p-3 bg-blue-50 rounded-2xl flex items-center justify-between border border-blue-100 italic text-[10px] font-bold text-blue-600 uppercase tracking-widest break-all">
                                     <span>Attachment: {selectedFile.name} ({fileType})</span>
                                     <button onClick={() => setSelectedFile(null)} className="text-red-500 hover:text-red-700">Cancel</button>
                                 </div>
@@ -725,3 +732,4 @@ export default function Messages() {
         </div>
     );
 }
+
