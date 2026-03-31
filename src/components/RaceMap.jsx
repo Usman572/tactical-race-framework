@@ -1,8 +1,8 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { motion } from 'framer-motion';
-import { useRaces } from '../context/RaceContext';
-import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 // Fix for default Leaflet markers in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,46 +14,47 @@ L.Icon.Default.mergeOptions({
 
 // Sector Themes
 const sectorThemes = {
-    'Neon District': { color: '#2563eb', glow: 'rgba(37,99,235,0.4)', icon: '🟦' },
-    'Outlands': { color: '#ea580c', glow: 'rgba(234,88,12,0.4)', icon: '🟧' },
-    'The Void': { color: '#9333ea', glow: 'rgba(147,51,234,0.4)', icon: '🟪' },
-    'Cyber City': { color: '#db2777', glow: 'rgba(219,39,119,0.4)', icon: '🎴' },
-    'Industrial Zone': { color: '#16a34a', glow: 'rgba(22,163,74,0.4)', icon: '🟩' }
+    'Neon District': { color: '#00f3fe', glow: 'rgba(0,243,254,0.8)', icon: '🟦' },
+    'Outlands': { color: '#ffb300', glow: 'rgba(255,179,0,0.8)', icon: '🟧' },
+    'The Void': { color: '#d300ff', glow: 'rgba(211,0,255,0.8)', icon: '🟪' },
+    'Cyber City': { color: '#ff0055', glow: 'rgba(255,0,85,0.8)', icon: '🎴' },
+    'Industrial Zone': { color: '#00ff66', glow: 'rgba(0,255,102,0.8)', icon: '🟩' }
 };
 
-const getSectorIcon = (sector) => {
+const getSectorIcon = (sector, isDimmed) => {
     const theme = sectorThemes[sector] || sectorThemes['Neon District'];
+    const opacity = isDimmed ? 'opacity-20 grayscale saturate-0 scale-50' : 'opacity-100 scale-100 hover:scale-125';
+    const animation = isDimmed ? '' : 'animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]';
+    
     return new L.DivIcon({
-        className: 'custom-sector-marker',
-        html: `<div class="w-10 h-10 flex items-center justify-center relative">
-                 <div class="absolute inset-0 bg-white/20 rounded-full blur-md animate-pulse"></div>
-                 <div class="w-8 h-8 rounded-full border-4 border-white shadow-2xl flex items-center justify-center relative z-10 transition-all hover:scale-125" style="background-color: ${theme.color}; box-shadow: 0 0 20px ${theme.glow}">
-                   <div class="w-2 h-2 bg-white rounded-full"></div>
+        className: 'custom-sector-marker bg-transparent',
+        html: `<div class="w-12 h-12 flex items-center justify-center relative transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${opacity}">
+                 <!-- Massive outer pulse -->
+                 <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl ${animation}" style="background-color: ${theme.color}"></div>
+                 
+                 <!-- Inner aggressive ring -->
+                 <div class="absolute inset-2 rounded-full border border-white/40 animate-[spin_4s_linear_infinite]" style="border-top-color: ${theme.color};"></div>
+                 
+                 <!-- Core Marker Base -->
+                 <div class="w-8 h-8 rounded-full border-[3px] border-white backdrop-blur-sm flex items-center justify-center relative z-10 overflow-hidden group-hover:scale-110 transition-transform duration-300" style="background-color: ${theme.color}; box-shadow: 0 0 40px ${theme.glow}, inset 0 0 10px rgba(255,255,255,0.8)">
+                   <!-- Center Diamond Target -->
+                   <div class="w-2.5 h-2.5 bg-white shadow-[0_0_15px_white] animate-pulse" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
                  </div>
                </div>`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
+        iconSize: [48, 48],
+        iconAnchor: [24, 24], 
     });
 };
-
-// User Location Marker
-const userIcon = new L.DivIcon({
-    className: 'custom-user-marker',
-    html: `<div class="w-10 h-10 bg-white rounded-full border-4 border-blue-600 shadow-2xl flex items-center justify-center">
-             <div class="w-3 h-3 bg-blue-600 rounded-full animate-ping"></div>
-           </div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-});
 
 // Helper to generate deterministic marker positions based on race ID and sector
 const generateMockCoords = (id, sector) => {
     let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    if (id) {
+        for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+        }
     }
     
-    // Offset by sector to group them roughly
     const sectorOffsets = {
         'Neon District': [0, 0],
         'Outlands': [5, 5],
@@ -68,52 +69,125 @@ const generateMockCoords = (id, sector) => {
     return [lat, lon];
 };
 
-export default function RaceMap({ races }) {
+// Map Controller for dynamic camera movement
+function MapController({ races, selectedSector }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!selectedSector || selectedSector === 'ALL') {
+             map.flyTo([20, 0], 3, { duration: 2, easeLinearity: 0.1 });
+             return;
+        }
+
+        const filtered = races.filter(r => r.sector === selectedSector);
+        if (filtered.length > 0) {
+            let avgLat = 0, avgLon = 0;
+            filtered.forEach(race => {
+                const [lat, lon] = generateMockCoords(race._id, race.sector);
+                avgLat += lat;
+                avgLon += lon;
+            });
+            avgLat /= filtered.length;
+            avgLon /= filtered.length;
+
+            map.flyTo([avgLat, avgLon], 6, { duration: 2, easeLinearity: 0.1 });
+        }
+    }, [selectedSector, races, map]);
+
+    return null;
+}
+
+export default function RaceMap({ races = [] }) {
     const center = [20, 0];
+    const [selectedSector, setSelectedSector] = useState('ALL');
+    const [stats, setStats] = useState({ active: 0, total: races.length });
+
+    useEffect(() => {
+        const filtered = selectedSector === 'ALL' ? races : races.filter(r => r.sector === selectedSector);
+        setStats({
+            active: filtered.filter(r => r.status === 'Active').length,
+            total: filtered.length
+        });
+    }, [selectedSector, races]);
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="w-full h-[600px] rounded-[3rem] overflow-hidden border border-[var(--border-main)] shadow-2xl relative group"
+            initial={{ opacity: 0, scale: 0.98, filter: 'brightness(0) contrast(2)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'brightness(1) contrast(1)' }}
+            transition={{ duration: 1.5, ease: "circOut" }}
+            className="w-full h-[700px] md:h-[800px] rounded-[1rem] md:rounded-[2rem] overflow-hidden border border-[#00f3fe]/30 shadow-[0_0_80px_-20px_rgba(0,243,254,0.3)] relative group bg-[#020617]"
         >
-            <MapContainer center={center} zoom={10} style={{ height: '100%', width: '100%', background: '#0f172a' }}>
+            <MapContainer center={center} zoom={3} style={{ height: '100%', width: '100%', background: '#020617' }} zoomControl={false}>
+                {/* Hyper-dark high contrast tile layer */}
                 <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+                    className="opacity-80 mix-blend-screen"
                 />
                 
+                <MapController races={races} selectedSector={selectedSector} />
 
                 {races.map((race) => {
                     const position = generateMockCoords(race._id, race.sector);
                     const theme = sectorThemes[race.sector] || sectorThemes['Neon District'];
+                    const isDimmed = selectedSector !== 'ALL' && selectedSector !== race.sector;
 
                     return (
-                        <Marker key={race._id} position={position} icon={getSectorIcon(race.sector)}>
-                            <Popup className="tactical-popup">
-                                <div className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 min-w-[200px]">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded bg-white/5 text-slate-400">
-                                            {race.sector || 'Unassigned Sector'}
-                                        </span>
-                                        <span className="text-xl">{theme.icon}</span>
+                        <Marker key={race._id} position={position} icon={getSectorIcon(race.sector, isDimmed)} zIndexOffset={isDimmed ? 0 : 1000}>
+                            <Popup className="tactical-popup border-none bg-transparent m-0 p-0" closeButton={false}>
+                                <div className="p-0 bg-transparent min-w-[300px] pointer-events-auto">
+                                    <div className="relative overflow-hidden bg-slate-950/90 backdrop-blur-2xl border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)' }}>
+                                        
+                                        {/* Dynamic Header */}
+                                        <div className="flex justify-between items-center p-4 border-b border-white/10 relative overflow-hidden group/header">
+                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/header:opacity-100 transition-opacity"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 bg-white/10 text-slate-300 relative z-10" style={{ borderLeft: `3px solid ${theme.color}` }}>
+                                                {race.sector || 'Unassigned'}
+                                            </span>
+                                            <span className="text-xl drop-shadow-lg opacity-80">{theme.icon}</span>
+                                        </div>
+
+                                        {/* Core Data Block */}
+                                        <div className="p-5">
+                                            <h3 className="font-black italic uppercase tracking-tighter text-2xl leading-[1] text-white mb-2" style={{ textShadow: `0 0 20px ${theme.color}` }}>
+                                                {race.name}
+                                            </h3>
+                                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] truncate">{race.location}</p>
+                                        </div>
+                                        
+                                        {/* Tactical Readouts */}
+                                        <div className="px-5 pb-5 space-y-3">
+                                            <div className="flex justify-between items-center bg-black/40 p-3 relative border border-white/5">
+                                                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/50"></div>
+                                                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/50"></div>
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] italic">Comm Status</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-2 h-2 rounded-full animate-pulse ${race.status === 'Active' ? 'bg-[#00ff66]' : 'bg-[#00f3fe]'}`}></span>
+                                                    <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${
+                                                        race.status === 'Active' ? 'text-[#00ff66]' : 'text-[#00f3fe]'
+                                                    }`}>{race.status}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] italic">Distance Scan</span>
+                                                <span className="text-white text-[11px] font-black tracking-widest">{race.trackLength || 0} KM</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Button */}
+                                        <Link 
+                                            to={`/races/${race._id}`}
+                                            className="block w-full text-center p-4 bg-white text-black font-black uppercase text-[11px] tracking-[0.4em] transition-all duration-300 hover:bg-[#00f3fe] relative overflow-hidden group/btn"
+                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
+                                            <span className="relative z-10 flex items-center justify-center gap-3">Initiate Recon <div className="w-1.5 h-1.5 bg-current rotate-45 group-hover/btn:scale-150 transition-transform"></div></span>
+                                        </Link>
+
                                     </div>
-                                    <h3 className="font-black italic uppercase tracking-tighter text-xl leading-none mb-1 text-blue-500">{race.name}</h3>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">{race.location}</p>
                                     
-                                    <div className="space-y-2 border-t border-white/5 pt-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">Status</span>
-                                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                                race.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
-                                            }`}>{race.status}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase tracking-widest italic">
-                                            <span>Distance</span>
-                                            <span className="text-white">{race.trackLength || 0} KM</span>
-                                        </div>
-                                    </div>
+                                    {/* Line connecting popup to marker centrally */}
+                                    <div className="w-[1px] h-8 bg-gradient-to-b from-white/30 to-transparent mx-auto"></div>
                                 </div>
                             </Popup>
                         </Marker>
@@ -121,21 +195,106 @@ export default function RaceMap({ races }) {
                 })}
             </MapContainer>
 
-            {/* Tactical Overlay */}
-            <div className="absolute top-8 left-8 z-[1000] pointer-events-none">
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl">
-                    <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-2">Global Coverage</h4>
-                    <div className="flex items-center gap-4">
-                        <div className="text-3xl font-black text-white tracking-tighter">{races.length}</div>
-                        <div className="h-8 w-[1px] bg-white/10"></div>
-                        <div className="text-[10px] font-bold text-white/40 uppercase leading-tight">Active Battle<br />Sectors Scan</div>
+            {/* Tactical Grid Background Overlay */}
+            <div className="absolute inset-0 pointer-events-none z-[400] mix-blend-overlay opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(0, 243, 254, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 254, 0.2) 1px, transparent 1px)', backgroundSize: '150px 150px'}}></div>
+
+            {/* Massive Radar Sweep Effect */}
+            <div className="absolute top-1/2 left-1/2 -ml-[100vw] -mt-[100vw] w-[200vw] h-[200vw] rounded-full bg-[conic-gradient(from_0deg_at_50%_50%,rgba(0,243,254,0)_0deg,rgba(0,243,254,0.05)_300deg,rgba(0,243,254,0.2)_360deg)] animate-[spin_10s_linear_infinite] pointer-events-none z-[401] mix-blend-screen"></div>
+
+            {/* Tactical Control Panel Overlay - Absolute Wow */}
+            <div className="absolute top-8 right-8 bottom-8 z-[1000] w-[320px] pointer-events-none hidden lg:flex flex-col justify-between">
+                
+                {/* Upper Module: Global Status */}
+                <motion.div 
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.8, type: 'spring' }}
+                    className="bg-[#020617]/90 backdrop-blur-3xl border-l-[3px] border-l-[#00f3fe] p-6 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] pointer-events-auto"
+                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px))' }}
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="relative flex items-center justify-center w-4 h-4">
+                            <span className="absolute w-full h-full rounded-full border border-[#00f3fe] animate-[ping_2s_ease-out_infinite]"></span>
+                            <span className="absolute w-2 h-2 rounded-full bg-[#00f3fe]"></span>
+                        </div>
+                        <h4 className="text-[10px] font-black text-[#00f3fe] uppercase tracking-[0.5em] leading-none mt-1">Global Scan</h4>
                     </div>
-                </div>
+                    
+                    <div className="flex items-center justify-between text-white">
+                         <div className="flex flex-col">
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Targets Found</span>
+                             <span className="text-4xl font-black tracking-tighter text-white" style={{ textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>{stats.total}</span>
+                         </div>
+                         <div className="h-12 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
+                         <div className="flex flex-col items-end">
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Engagements</span>
+                             <span className="text-4xl font-black tracking-tighter text-[#00ff66]" style={{ textShadow: '0 0 20px rgba(0,255,102,0.4)' }}>{stats.active}</span>
+                         </div>
+                    </div>
+                </motion.div>
+
+                {/* Lower Module: Tactical Filter Hub */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1, type: 'spring' }}
+                    className="bg-[#020617]/80 backdrop-blur-3xl p-5 border border-white/5 pointer-events-auto"
+                    style={{ clipPath: 'polygon(0 20px, 20px 0, 100% 0, 100% 100%, 0 100%)' }}
+                >
+                    <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+                       <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em]">Sector Filter Array</h4>
+                       <div className="flex gap-1">
+                           <div className="w-1.5 h-1.5 bg-white/20"></div>
+                           <div className="w-1.5 h-1.5 bg-white/20"></div>
+                           <div className="w-1.5 h-1.5 bg-white/60 animate-pulse"></div>
+                       </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <button 
+                            onClick={() => setSelectedSector('ALL')}
+                            className={`w-full flex items-center justify-between px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.3em] transition-all bg-transparent group/btn ${selectedSector === 'ALL' ? 'text-white border-l-2 border-white' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
+                        >
+                            <span className="group-hover/btn:translate-x-2 transition-transform">Global Override</span>
+                            {selectedSector === 'ALL' && <div className="w-2 h-2 bg-white rounded-sm animate-pulse shadow-[0_0_10px_white]"></div>}
+                        </button>
+                        
+                        {Object.keys(sectorThemes).map(sector => (
+                            <button
+                                key={sector}
+                                onClick={() => setSelectedSector(sector)}
+                                className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
+                                style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
+                            >
+                                <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
+                                    <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
+                                </div>
+                                {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
+                                {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
             </div>
 
-            {/* Corner Scan Line Effect */}
-            <div className="absolute inset-0 pointer-events-none z-[1001] border-[20px] border-slate-900/20 rounded-[3rem]"></div>
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-500/20 z-[1002] animate-[scan_4s_linear_infinite]"></div>
+            {/* Corner Bracket / Target Lock HUD Designs */}
+            <div className="absolute top-6 left-6 w-20 h-20 border-t-[3px] border-l-[3px] border-[#00f3fe]/70 pointer-events-none z-[400] shadow-[0_0_15px_rgba(0,243,254,0.4)]"></div>
+            <div className="absolute top-6 left-6 w-12 h-12 border-t border-l border-white/30 pointer-events-none z-[400] m-2"></div>
+            
+            <div className="absolute bottom-6 left-6 w-20 h-20 border-b-[3px] border-l-[3px] border-[#00f3fe]/70 pointer-events-none z-[400] shadow-[0_0_15px_rgba(0,243,254,0.4)]"></div>
+            <div className="absolute bottom-6 left-6 w-12 h-12 border-b border-l border-white/30 pointer-events-none z-[400] m-2"></div>
+            
+            <div className="absolute top-6 right-[400px] w-20 h-20 border-t-[3px] border-r-[3px] border-[#00f3fe]/70 pointer-events-none z-[400] shadow-[0_0_15px_rgba(0,243,254,0.4)] hidden 2xl:block"></div>
+            
+            {/* Cinematic Map Scan Line Effect */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00f3fe] to-transparent shadow-[0_0_30px_20px_rgba(0,243,254,0.15)] z-[402] animate-[scan_8s_cubic-bezier(0.4,0,0.2,1)_infinite] opacity-70 pointer-events-none mix-blend-screen"></div>
+
+            {/* Mobile filter toggle warning (since control panel is hidden on mobile) */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] lg:hidden">
+                <div className="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.3em] text-[#00f3fe] border border-[#00f3fe]/30 shadow-[0_0_20px_rgba(0,243,254,0.2)]">
+                    Tactical Filter: Desktop Only
+                </div>
+            </div>
         </motion.div>
     );
 }
