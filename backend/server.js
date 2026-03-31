@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const fs = require('fs');
 const path = require('path');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 connectDB();
@@ -37,6 +38,19 @@ app.use(cors({
 // --------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// --------------------
+// Global Rate Limiting
+// --------------------
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 150, // Limit each IP to 150 requests per window
+    message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+// Apply global limiter to all /api routes
+app.use('/api', globalLimiter);
 
 // Static Folders
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
