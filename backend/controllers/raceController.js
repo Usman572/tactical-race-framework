@@ -50,13 +50,16 @@ const getRaces = async (req, res) => {
 
 const createRace = async (req, res) => {
     try {
-        const { name, location, date, type, status, trackLength, sector, bannerImage } = req.body;
+        const { name, location, date, type, status, trackLength, sector, bannerImage, maxParticipants, registrationDeadline } = req.body;
         if (!name || !location || !date) {
             return res.status(400).json({ message: 'Name, location and date are required' });
         }
-        // If user is logged in, record who created it
         const createdBy = req.user?._id || null;
-        const race = await Race.create({ name, location, date, type, status, trackLength, sector, bannerImage, createdBy });
+        const race = await Race.create({
+            name, location, date, type, status, trackLength, sector, bannerImage, createdBy,
+            maxParticipants: maxParticipants || null,
+            registrationDeadline: registrationDeadline || null,
+        });
 
         // XP Award for creation
         if (createdBy) {
@@ -85,7 +88,7 @@ const createRace = async (req, res) => {
 
 const updateRace = async (req, res) => {
     try {
-        const { name, location, date, type, status, trackLength, sector, bannerImage } = req.body;
+        const { name, location, date, type, status, trackLength, sector, bannerImage, maxParticipants, registrationDeadline } = req.body;
         const race = await Race.findById(req.params.id);
 
         if (!race) return res.status(404).json({ message: 'Race not found' });
@@ -97,7 +100,10 @@ const updateRace = async (req, res) => {
 
         const updatedRace = await Race.findByIdAndUpdate(
             req.params.id,
-            { name, location, date, type, status, trackLength, sector, bannerImage },
+            { name, location, date, type, status, trackLength, sector, bannerImage,
+              maxParticipants: maxParticipants || null,
+              registrationDeadline: registrationDeadline || null,
+            },
             { new: true, runValidators: true }
         );
         await updatedRace.populate('createdBy', 'name email role slug');
@@ -140,7 +146,7 @@ const requestToJoin = async (req, res) => {
         if (!race) return res.status(404).json({ message: 'Race not found' });
 
         const userId = req.user._id;
-        
+
         // Already a participant?
         if (race.participants.some(p => p.equals(userId))) {
             return res.status(400).json({ message: 'Already a participant' });
@@ -152,7 +158,24 @@ const requestToJoin = async (req, res) => {
             return res.status(400).json({ message: 'Join request already pending' });
         }
 
-        const request = await JoinRequest.create({ race: race._id, user: userId });
+        // Check registration deadline
+        if (race.registrationDeadline && new Date() > new Date(race.registrationDeadline)) {
+            return res.status(400).json({ message: 'Registration deadline has passed' });
+        }
+
+        // Check capacity
+        if (race.maxParticipants && race.participants.length >= race.maxParticipants) {
+            return res.status(400).json({ message: 'Race is full. No slots available.' });
+        }
+
+        const { message, vehicleDetails, experience } = req.body;
+        const request = await JoinRequest.create({
+            race: race._id,
+            user: userId,
+            message: message || '',
+            vehicleDetails: vehicleDetails || '',
+            experience: experience || 'Rookie',
+        });
 
         // Notify creator using utility
         if (race.createdBy) {

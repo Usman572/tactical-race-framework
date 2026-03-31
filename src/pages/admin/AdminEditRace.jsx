@@ -16,7 +16,8 @@ export default function AdminEditRace() {
         trackLength: "",
         sector: "Neon District",
         bannerImage: "",
-        participants: 0
+        maxParticipants: "",
+        registrationDeadline: "",
     });
 
     useEffect(() => {
@@ -151,6 +152,35 @@ export default function AdminEditRace() {
                             value={formData.bannerImage}
                             onChange={handleChange}
                         />
+                    </div>
+                </div>
+
+                {/* Registration Flow Fields */}
+                <div className="border-t border-slate-100 pt-6">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Registration Settings</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Max Participants <span className="text-slate-400 font-normal">(optional)</span></label>
+                            <input
+                                type="number"
+                                name="maxParticipants"
+                                min="1"
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-400 font-medium"
+                                placeholder="e.g. 50 (leave blank for unlimited)"
+                                value={formData.maxParticipants || ''}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Registration Deadline <span className="text-slate-400 font-normal">(optional)</span></label>
+                            <input
+                                type="date"
+                                name="registrationDeadline"
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700"
+                                value={formData.registrationDeadline ? new Date(formData.registrationDeadline).toISOString().split('T')[0] : ''}
+                                onChange={handleChange}
+                            />
+                        </div>
                     </div>
                 </div>
 

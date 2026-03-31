@@ -19,6 +19,9 @@ const raceSchema = mongoose.Schema(
             time: String
         }],
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        // Registration Flow fields
+        maxParticipants: { type: Number, default: null }, // null = unlimited
+        registrationDeadline: { type: Date, default: null },
     },
     { timestamps: true }
 );

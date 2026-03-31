@@ -137,11 +137,15 @@ export function RaceProvider({ children }) {
         }
     };
 
-    const requestToJoin = async (id) => {
+    const requestToJoin = async (id, payload = {}) => {
         try {
             const response = await measureFetch(`${API_BASE_URL}/api/races/${id}/request`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${user?.token}` }
+                headers: {
+                    'Authorization': `Bearer ${user?.token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
             });
             const data = await response.json();
             return { success: response.ok, data, message: data.message };
