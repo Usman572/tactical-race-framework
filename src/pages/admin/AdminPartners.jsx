@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useRaces } from "../../context/RaceContext";
 import { API_BASE_URL } from "../../config/api";
-
 export default function AdminPartners() {
   const [users, setUsers] = useState([]);
   const { user: currentUser } = useAuth();
@@ -29,10 +31,8 @@ export default function AdminPartners() {
   };
 
   const getRaceCount = (partnerId) => {
-    // Assuming race.creator is an object (populated) or string ID.
-    // After populate, it's an object. If not populated, it's ID.
-    // But wait, getRaces calls populate('creator'). So race.creator is an object with _id.
-    return races.filter(r => (r.creator._id === partnerId || r.creator === partnerId)).length;
+    // Race author field is 'createdBy', not 'creator'. Adding safety check for null/undefined.
+    return races.filter(r => (r.createdBy && (r.createdBy._id === partnerId || r.createdBy === partnerId))).length;
   };
 
   if (isLoading) return <div className="p-10 text-center">Loading partners...</div>;
