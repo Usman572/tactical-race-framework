@@ -16,15 +16,36 @@ connectDB();
 const app = express();
 
 // --------------------
+// Express 5 Compatibility
+// --------------------
+// Redefine request properties to be writable to allow sanitization middlewares
+// to function correctly (Express 5 makes some of these read-only getters).
+app.use((req, res, next) => {
+    ['query', 'params', 'body'].forEach(prop => {
+        Object.defineProperty(req, prop, {
+            value: req[prop] ? { ...req[prop] } : (prop === 'body' ? {} : null),
+            writable: true,
+            configurable: true,
+            enumerable: true,
+        });
+    });
+    next();
+});
+
+// --------------------
 // Security Middleware
 // --------------------
-// Set secure HTTP headers
+// 1. Set secure HTTP headers
 app.use(helmet());
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
+// 2. Disable CORS restrictions
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true,
+}));
 
-// --------------------
+// 3. Sanitize data against NoSQL injection
+app.use(mongoSanitize());
 // Logging setup
 // --------------------
 const logDir = path.join(__dirname, 'logs');
@@ -35,14 +56,6 @@ const accessLogStream = fs.createWriteStream(
     { flags: 'a' }
 );
 app.use(morgan('combined', { stream: accessLogStream }));
-
-// --------------------
-// Disable CORS restrictions
-// --------------------
-app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
-    credentials: true,
-}));
 
 // --------------------
 // Body parsers
@@ -88,6 +101,17 @@ app.get('/ping', (req, res) => {
 });
 
 // --------------------
+// Error Handler
+// --------------------
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR HANDLER:', err);
+    res.status(err.status || 500).json({ 
+        message: err.message || 'Server error',
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack 
+    });
+});
+
+// --------------------
 // Start server
 // --------------------
 const http = require('http');
@@ -98,3 +122,4 @@ const server = http.createServer(app);
 socketManager.init(server);
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+

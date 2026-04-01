@@ -82,6 +82,10 @@ const createRace = async (req, res) => {
         await race.populate('createdBy', 'name email role slug');
         res.status(201).json(race);
     } catch (err) {
+        console.error('createRace error:', err);
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: err.message });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -193,6 +197,9 @@ const requestToJoin = async (req, res) => {
         res.status(201).json(request);
     } catch (err) {
         console.error('requestToJoin error:', err);
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: err.message });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 };

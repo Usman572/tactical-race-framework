@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { registerUser, loginUser } = require('../controllers/authController');
-const { validateRequest } = require('../middleware/validationMiddleware');
+const { validateRequest } = require('../middleware/validationMiddleware.js');
 const rateLimit = require('express-rate-limit');
 
 // Strict rate limiter for auth routes to prevent credential stuffing/brute force
