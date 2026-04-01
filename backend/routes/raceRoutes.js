@@ -19,6 +19,35 @@ const {
     completeRace
 } = require('../controllers/raceController');
 const { protect } = require('../middleware/authMiddleware');
+const rateLimit = require('express-rate-limit');
+const { body } = require('express-validator');
+const { validateRequest } = require('../middleware/validationMiddleware');
+
+// Specific limiter for join requests (preventing spam)
+const joinRequestLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 join requests per window
+    message: { message: 'Too many join requests from this IP, please try again later.' }
+});
+
+// Validation rules for race creation/update
+const raceValidation = [
+    body('name').notEmpty().withMessage('Name is required').trim().escape(),
+    body('location').notEmpty().withMessage('Location is required').trim().escape(),
+    body('date').isISO8601().withMessage('Date must be a valid ISO8601 string'),
+    body('type').optional().isString().trim().escape(),
+    body('maxParticipants').optional().isInt({ min: 1 }).withMessage('Max participants must be at least 1'),
+    body('registrationDeadline').optional().isISO8601().withMessage('Deadline must be a valid ISO8601 string'),
+    validateRequest
+];
+
+// Validation for join requests
+const joinRequestValidation = [
+    body('message').optional().isString().isLength({ max: 500 }).withMessage('Message is too long').trim().escape(),
+    body('vehicleDetails').optional().isString().trim().escape(),
+    body('experience').optional().isString().trim().escape(),
+    validateRequest
+];
 
 router.get('/search', searchAll);
 
@@ -33,8 +62,8 @@ const softProtect = (req, res, next) => {
 
 router.get('/', getRaces);
 router.get('/:id', getRaceById);
-router.post('/', softProtect, createRace);      // public, but captures createdBy if logged in
-router.put('/:id', protect, updateRace);
+router.post('/', softProtect, raceValidation, createRace);      // public, but captures createdBy if logged in
+router.put('/:id', protect, raceValidation, updateRace);
 router.delete('/:id', protect, deleteRace);
 router.post('/:id/join', protect, joinRace);
 router.post('/:id/leave', protect, leaveRace);
@@ -42,7 +71,7 @@ router.post('/:id/leave', protect, leaveRace);
 // Join Requests
 router.get('/requests/pending', protect, getPendingRequests);
 router.get('/requests/my', protect, getMyRequests);
-router.post('/:id/request', protect, requestToJoin);
+router.post('/:id/request', protect, joinRequestLimiter, joinRequestValidation, requestToJoin);
 router.patch('/requests/:id/approve', protect, approveJoinRequest);
 router.patch('/requests/:id/reject', protect, rejectJoinRequest);
 

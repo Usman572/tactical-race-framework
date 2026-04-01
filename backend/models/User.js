@@ -38,7 +38,9 @@ const userSchema = mongoose.Schema(
             expiresAt: Date
         }],
         dailyXP: { type: Number, default: 0 },
-        lastXPUpdate: { type: Date, default: Date.now }
+        lastXPUpdate: { type: Date, default: Date.now },
+        failedLoginAttempts: { type: Number, default: 0 },
+        lockUntil: { type: Date }
     },
     { timestamps: true }
 );

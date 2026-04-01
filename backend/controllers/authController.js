@@ -50,10 +50,35 @@ const loginUser = async (req, res) => {
         }
 
         const user = await User.findOne({ email });
-        if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+        
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Check if account is locked
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+            return res.status(423).json({ 
+                message: `Account is temporarily locked. Please try again in ${minutesLeft} minutes.` 
+            });
+        }
 
         const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+        
+        if (!match) {
+            user.failedLoginAttempts += 1;
+            
+            if (user.failedLoginAttempts >= 5) {
+                user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+            }
+            
+            await user.save();
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Successful login - reset attempts
+        user.failedLoginAttempts = 0;
+        user.lockUntil = null;
 
         const token = generateToken(user);
 
@@ -69,8 +94,9 @@ const loginUser = async (req, res) => {
                 counter++;
             }
             user.slug = slug;
-            await user.save();
         }
+        
+        await user.save();
 
         res.json({ id: user._id, name: user.name, email: user.email, role: user.role, slug: user.slug, profilePicture: user.profilePicture, token });
     } catch (err) {
