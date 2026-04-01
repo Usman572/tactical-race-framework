@@ -7,11 +7,22 @@ const fs = require('fs');
 const path = require('path');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
 
 dotenv.config();
 connectDB();
 
 const app = express();
+
+// --------------------
+// Security Middleware
+// --------------------
+// Set secure HTTP headers
+app.use(helmet());
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
 
 // --------------------
 // Logging setup
