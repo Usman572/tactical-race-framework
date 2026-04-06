@@ -77,14 +77,14 @@ const GuestHero = () => (
                     to="/register"
                     className="group relative px-12 py-6 bg-white text-slate-950 rounded-[2rem] font-black text-xl uppercase tracking-widest transition-all hover:scale-105 hover:bg-blue-600 hover:text-white shadow-[0_0_50px_rgba(255,255,255,0.15)] active:scale-95 overflow-hidden"
                 >
-                    <span className="relative z-10">Initialize Career</span>
+                    <span className="relative z-10">Sign Up</span>
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </Link>
                 <Link
                     to="/login"
                     className="px-12 py-6 bg-transparent backdrop-blur-md border-2 border-white/20 text-white rounded-[2rem] font-black text-xl uppercase tracking-widest hover:border-white transition-all hover:bg-white/5 active:scale-95"
                 >
-                    Agent Login
+                    Login
                 </Link>
             </motion.div>
 
