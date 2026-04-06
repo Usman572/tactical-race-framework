@@ -39,79 +39,89 @@ export default function RegistrationModal({ race, onClose, onSubmit, isSubmittin
                     exit={{ y: 80, opacity: 0, scale: 0.96 }}
                     transition={{ type: "spring", stiffness: 300, damping: 28 }}
                     onClick={e => e.stopPropagation()}
-                    className="bg-white w-full sm:max-w-xl rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden"
+                    className="bg-[var(--bg-main)] w-full sm:max-w-xl rounded-t-[3rem] sm:rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-[var(--border-main)] overflow-hidden relative transition-colors duration-500"
                 >
+                    <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:25px_25px] pointer-events-none" />
+
                     {/* Step Indicator */}
-                    <div className="px-8 pt-8 pb-0 flex items-center gap-2">
+                    <div className="px-10 pt-10 pb-0 flex items-center gap-3 relative z-10">
                         {STEPS.map((s, i) => (
-                            <div key={s} className="flex items-center gap-2">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-300 ${i <= step ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            <div key={s} className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all duration-500 shadow-xl ${i <= step ? 'bg-blue-600 text-white shadow-blue-600/20' : 'bg-[var(--header-bg)] text-[var(--text-main)] opacity-30'}`}>
                                     {i < step ? "✓" : i + 1}
                                 </div>
-                                <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${i === step ? 'text-slate-900' : 'text-slate-300'}`}>{s}</span>
-                                {i < STEPS.length - 1 && <div className={`h-px w-8 transition-colors ${i < step ? 'bg-slate-900' : 'bg-slate-200'}`} />}
+                                <span className={`text-[9px] font-black uppercase tracking-[0.3em] transition-colors italic ${i === step ? 'text-blue-500' : 'text-[var(--text-main)] opacity-20'}`}>{s}</span>
+                                {i < STEPS.length - 1 && <div className={`h-[2px] w-8 rounded-full transition-all duration-500 ${i < step ? 'bg-blue-600' : 'bg-[var(--border-main)]'}`} />}
                             </div>
                         ))}
-                        <button onClick={onClose} className="ml-auto p-2 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        <button onClick={onClose} className="ml-auto p-3 rounded-2xl text-[var(--text-main)] opacity-20 hover:opacity-100 hover:bg-white/5 transition-all active:scale-90">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                         </button>
                     </div>
 
                     {/* Step Content */}
                     <AnimatePresence mode="wait">
                         {step === 0 && (
-                            <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-6">
+                            <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-10 space-y-8 relative z-10">
                                 <div>
-                                    <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Operative Brief</h2>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Confirm mission parameters before deployment request</p>
+                                    <h2 className="text-3xl font-black tracking-tighter text-[var(--text-main)] uppercase italic">Operative Brief</h2>
+                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mt-2 italic">Confirm mission parameters before deployment request</p>
                                 </div>
 
                                 {/* Race Summary Card */}
-                                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-3">
-                                    <div className="flex items-start justify-between gap-4">
+                                <div className="bg-[var(--header-bg)]/50 backdrop-blur-3xl rounded-[2rem] p-8 border border-[var(--border-main)] space-y-6 shadow-2xl relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                    <div className="flex items-start justify-between gap-4 relative z-10">
                                         <div>
-                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Target Assignment</p>
-                                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{race.name}</h3>
+                                            <p className="text-[9px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] mb-2 italic">Target Assignment</p>
+                                            <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight italic leading-none">{race.name}</h3>
                                         </div>
-                                        <span className="shrink-0 bg-blue-600/10 text-blue-600 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border border-blue-500/10">{race.type}</span>
+                                        <span className="shrink-0 bg-blue-600/10 text-blue-500 text-[9px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-xl border border-blue-500/20 italic shadow-xl">{race.type}</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                                    <div className="grid grid-cols-2 gap-6 pt-6 border-t border-[var(--border-main)] relative z-10">
                                         <div>
-                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Location</p>
-                                            <p className="text-xs font-bold text-slate-700 mt-0.5">📍 {race.location}</p>
+                                            <p className="text-[8px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] italic mb-1.5">Location</p>
+                                            <p className="text-xs font-black text-[var(--text-main)] flex items-center gap-2 italic uppercase">
+                                                <span className="text-blue-500 text-sm">📍</span> {race.location}
+                                            </p>
                                         </div>
                                         <div>
-                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Date</p>
-                                            <p className="text-xs font-bold text-slate-700 mt-0.5">📅 {new Date(race.date).toLocaleDateString()}</p>
+                                            <p className="text-[8px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] italic mb-1.5">Launch_Time</p>
+                                            <p className="text-xs font-black text-[var(--text-main)] flex items-center gap-2 italic uppercase">
+                                                <span className="text-blue-500 text-sm">📅</span> {new Date(race.date).toLocaleDateString()}
+                                            </p>
                                         </div>
                                         {slotsLeft !== null && (
                                             <div>
-                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Slots</p>
-                                                <p className={`text-xs font-bold mt-0.5 ${slotsLeft <= 2 ? 'text-red-500' : 'text-emerald-600'}`}>
-                                                    {isFull ? '🔴 Full' : `🟢 ${slotsLeft} remaining`}
+                                                <p className="text-[8px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] italic mb-1.5">Availability</p>
+                                                <p className={`text-xs font-black italic uppercase flex items-center gap-2 ${slotsLeft <= 2 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                    {isFull ? <span className="w-2 h-2 rounded-full bg-red-500 shadow-glow-red animate-pulse" /> : <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-glow-emerald animate-pulse" />}
+                                                    {isFull ? 'Sector Full' : `${slotsLeft} Slots Remaining`}
                                                 </p>
                                             </div>
                                         )}
                                         {deadline && (
                                             <div>
-                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Deadline</p>
-                                                <p className={`text-xs font-bold mt-0.5 ${isClosed ? 'text-red-500' : 'text-slate-700'}`}>
-                                                    {isClosed ? '⛔ Closed' : `⏳ ${deadline.toLocaleDateString()}`}
+                                                <p className="text-[8px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] italic mb-1.5">Signal_Cutoff</p>
+                                                <p className={`text-xs font-black italic uppercase flex items-center gap-2 ${isClosed ? 'text-red-500' : 'text-blue-500'}`}>
+                                                    <span className="text-sm">⏳</span> {isClosed ? 'Signal Lost' : deadline.toLocaleDateString()}
                                                 </p>
                                             </div>
                                         )}
                                     </div>
                                     {/* Capacity Bar */}
                                     {race.maxParticipants && (
-                                        <div className="pt-2">
-                                            <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                                                <span>Capacity</span>
-                                                <span>{race.participants?.length || 0} / {race.maxParticipants}</span>
+                                        <div className="pt-4 relative z-10">
+                                            <div className="flex justify-between text-[8px] font-black uppercase tracking-[0.4em] mb-2.5 italic">
+                                                <span className="text-[var(--text-main)] opacity-30">Sector Occupancy</span>
+                                                <span className={isFull ? 'text-red-500' : 'text-blue-600'}>{race.participants?.length || 0} / {race.maxParticipants}</span>
                                             </div>
-                                            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : 'bg-blue-600'}`}
-                                                    style={{ width: `${Math.min(100, ((race.participants?.length || 0) / race.maxParticipants) * 100)}%` }}
+                                            <div className="h-2 bg-[var(--bg-main)] rounded-full overflow-hidden border border-[var(--border-main)] p-[2px] shadow-inner">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.min(100, ((race.participants?.length || 0) / race.maxParticipants) * 100)}%` }}
+                                                    transition={{ duration: 1.5, ease: "circOut" }}
+                                                    className={`h-full rounded-full shadow-lg ${isFull ? 'bg-red-600 shadow-red-600/20' : 'bg-blue-600 shadow-blue-600/20'}`}
                                                 />
                                             </div>
                                         </div>
@@ -119,37 +129,39 @@ export default function RegistrationModal({ race, onClose, onSubmit, isSubmittin
                                 </div>
 
                                 {(isFull || isClosed) ? (
-                                    <div className="p-4 bg-red-50 rounded-2xl border border-red-100 text-center">
-                                        <p className="text-sm font-black text-red-600 uppercase tracking-tight">{isFull ? '🔴 Race is Full' : '⛔ Registration Closed'}</p>
-                                        <p className="text-[10px] text-red-400 mt-1">{isFull ? 'No deployment slots available.' : 'The registration deadline has passed.'}</p>
+                                    <div className="p-6 bg-red-600/10 rounded-2xl border border-red-500/20 text-center shadow-xl">
+                                        <p className="text-xs font-black text-red-500 uppercase tracking-[0.2em] italic">{isFull ? 'Sector Max Capacity' : 'Signal Transmission Expired'}</p>
+                                        <p className="text-[9px] font-black text-red-500 opacity-40 mt-1.5 uppercase italic">{isFull ? 'No deployment slots available.' : 'The registration deadline has passed.'}</p>
                                     </div>
                                 ) : (
-                                    <button onClick={() => setStep(1)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-900/10">
-                                        Proceed to Deployment Intel →
+                                    <button onClick={() => setStep(1)} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] hover:bg-black transition-all active:scale-[0.98] shadow-glow-primary italic relative overflow-hidden group/btn">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-white/10 to-blue-400/0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
+                                        Initialize Intelligence →
                                     </button>
                                 )}
                             </motion.div>
                         )}
 
                         {step === 1 && (
-                            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 space-y-6">
+                            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-10 space-y-8 relative z-10">
                                 <div>
-                                    <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Deployment Intel</h2>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Provide your operative profile for mission command review</p>
+                                    <h2 className="text-3xl font-black tracking-tighter text-[var(--text-main)] uppercase italic">Deployment Intel</h2>
+                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mt-2 italic">Provide your operative profile for mission command review</p>
                                 </div>
 
                                 {/* Experience Level */}
                                 <div>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Operative Classification</p>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <p className="text-[9px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] mb-4 italic">Operative Grade</p>
+                                    <div className="grid grid-cols-3 gap-4">
                                         {EXPERIENCE_OPTIONS.map(opt => (
                                             <button
                                                 key={opt.value}
                                                 onClick={() => setForm(f => ({ ...f, experience: opt.value }))}
-                                                className={`p-3 rounded-2xl border-2 text-center transition-all ${form.experience === opt.value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-300'}`}
+                                                className={`p-5 rounded-2xl border-2 text-center transition-all shadow-xl active:scale-95 group/opt relative overflow-hidden ${form.experience === opt.value ? 'border-blue-600 bg-blue-600 shadow-blue-600/20' : 'border-[var(--border-main)] bg-[var(--header-bg)] hover:border-blue-600/40'}`}
                                             >
-                                                <div className="text-xl mb-1">{opt.icon}</div>
-                                                <div className="text-[9px] font-black uppercase tracking-widest">{opt.label}</div>
+                                                <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover/opt:opacity-100 transition-opacity" />
+                                                <div className="text-3xl mb-2 relative z-10 group-hover/opt:scale-110 transition-transform">{opt.icon}</div>
+                                                <div className={`text-[10px] font-black uppercase tracking-[0.2em] relative z-10 italic ${form.experience === opt.value ? 'text-white' : 'text-[var(--text-main)] opacity-60'}`}>{opt.label}</div>
                                             </button>
                                         ))}
                                     </div>
@@ -157,67 +169,75 @@ export default function RegistrationModal({ race, onClose, onSubmit, isSubmittin
 
                                 {/* Vehicle Details */}
                                 <div>
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Vehicle / Machine (optional)</label>
+                                    <label className="text-[9px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] block mb-2.5 italic">Machine_ID (Optional)</label>
                                     <input
                                         type="text"
-                                        placeholder="e.g. 2024 Dodge Challenger SRT"
+                                        placeholder="E.G. 2024 DODGE CHALLENGER SRT"
                                         value={form.vehicleDetails}
                                         onChange={e => setForm(f => ({ ...f, vehicleDetails: e.target.value }))}
-                                        className="w-full h-12 px-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-600/40 focus:bg-white transition-all text-sm font-medium text-slate-800 placeholder:text-slate-300"
+                                        className="w-full h-14 px-6 bg-[var(--header-bg)] rounded-2xl border-2 border-transparent focus:border-blue-600/40 transition-all text-sm font-black text-[var(--text-main)] placeholder:opacity-20 uppercase tracking-widest italic shadow-inner"
                                     />
                                 </div>
 
                                 {/* Message */}
                                 <div>
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Message to Command (optional)</label>
+                                    <label className="text-[9px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] block mb-2.5 italic">Comms_Feed (Optional)</label>
                                     <textarea
                                         rows={3}
-                                        placeholder="Anything mission command should know about this operative..."
+                                        placeholder="SIGNAL DATA FOR COMMAND..."
                                         value={form.message}
                                         onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-600/40 focus:bg-white transition-all text-sm font-medium text-slate-800 placeholder:text-slate-300 resize-none"
+                                        className="w-full px-6 py-4 bg-[var(--header-bg)] rounded-2xl border-2 border-transparent focus:border-blue-600/40 transition-all text-sm font-black text-[var(--text-main)] placeholder:opacity-20 uppercase tracking-widest italic shadow-inner resize-none h-32"
                                     />
                                 </div>
 
-                                <div className="flex gap-3">
-                                    <button onClick={() => setStep(0)} className="px-6 py-4 rounded-2xl bg-slate-100 text-slate-600 font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all">
-                                        ← Back
+                                <div className="flex gap-4">
+                                    <button onClick={() => setStep(0)} className="px-8 py-5 rounded-2xl bg-[var(--header-bg)] text-[var(--text-main)] font-black text-[11px] uppercase tracking-[0.3em] hover:bg-white/5 transition-all border border-[var(--border-main)] italic shadow-xl">
+                                        ← Abort
                                     </button>
                                     <button
                                         onClick={handleSubmit}
                                         disabled={isSubmitting}
-                                        className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-blue-500/20 disabled:opacity-50"
+                                        className="flex-1 py-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] hover:bg-black transition-all active:scale-[0.98] shadow-glow-primary italic disabled:opacity-30 relative overflow-hidden group/send"
                                     >
-                                        {isSubmitting ? "Transmitting Signal..." : "⚡ Transmit Request"}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-white/10 to-blue-400/0 -translate-x-full group-hover/send:translate-x-full transition-transform duration-1000" />
+                                        {isSubmitting ? "SYNCING..." : "Transmit_Intel ⚡"}
                                     </button>
                                 </div>
                             </motion.div>
                         )}
 
                         {step === 2 && (
-                            <motion.div key="step2" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-8 text-center space-y-6">
+                            <motion.div key="step2" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-10 text-center space-y-8 relative z-10">
                                 {result?.success ? (
                                     <>
-                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1 }} className="w-20 h-20 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-3xl mx-auto shadow-2xl shadow-blue-500/30">⚡</motion.div>
+                                        <motion.div 
+                                            initial={{ scale: 0, rotate: -180 }} 
+                                            animate={{ scale: 1, rotate: 0 }} 
+                                            transition={{ type: "spring", damping: 15, delay: 0.2 }} 
+                                            className="w-24 h-24 bg-emerald-500 rounded-[2rem] flex items-center justify-center text-4xl mx-auto shadow-2xl shadow-emerald-500/30 text-white"
+                                        >
+                                            ⚡
+                                        </motion.div>
                                         <div>
-                                            <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Signal Transmitted</h2>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Awaiting operative authorization</p>
+                                            <h2 className="text-3xl font-black tracking-tighter text-[var(--text-main)] uppercase italic">Signal Transmitted</h2>
+                                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mt-2 italic underline decoration-blue-500/30 underline-offset-4">Awaiting operative authorization</p>
                                         </div>
-                                        <p className="text-sm text-slate-500 font-medium leading-relaxed">Your deployment request has been sent to mission command. You'll receive a signal confirmation once approved.</p>
-                                        <button onClick={onClose} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-600 transition-all">
-                                            Return to Briefing
+                                        <p className="text-sm text-[var(--text-main)] opacity-40 font-black uppercase tracking-tight italic leading-relaxed">Your deployment request has been synced with mission command. You'll receive a signal confirmation once cleared.</p>
+                                        <button onClick={onClose} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] hover:bg-black transition-all shadow-glow-primary italic">
+                                            Return to Sector Feed
                                         </button>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="w-20 h-20 bg-red-100 rounded-[1.5rem] flex items-center justify-center text-3xl mx-auto">⛔</div>
+                                        <div className="w-24 h-24 bg-red-600/10 rounded-[2rem] flex items-center justify-center text-4xl mx-auto border-2 border-red-500/20 text-red-500 shadow-xl">⛔</div>
                                         <div>
-                                            <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Transmission Failed</h2>
-                                            <p className="text-sm text-red-500 font-bold mt-2">{result?.message || "Signal blocked. Try again."}</p>
+                                            <h2 className="text-3xl font-black tracking-tighter text-[var(--text-main)] uppercase italic">Transmission Error</h2>
+                                            <p className="text-sm font-black text-red-500 uppercase italic tracking-widest mt-4">{result?.message || "Signal blocked by external factors."}</p>
                                         </div>
-                                        <div className="flex gap-3">
-                                            <button onClick={() => { setStep(1); }} className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all">Retry</button>
-                                            <button onClick={onClose} className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all">Abort</button>
+                                        <div className="flex gap-4">
+                                            <button onClick={() => { setStep(1); }} className="flex-1 py-5 bg-[var(--header-bg)] text-[var(--text-main)] rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] hover:bg-white/5 transition-all border border-[var(--border-main)] italic shadow-xl">Retry_Link</button>
+                                            <button onClick={onClose} className="flex-1 py-5 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] hover:bg-black transition-all italic shadow-xl shadow-red-600/20">Abort_Protocol</button>
                                         </div>
                                     </>
                                 )}

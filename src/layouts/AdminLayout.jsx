@@ -27,7 +27,7 @@ export default function AdminLayout() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans relative overflow-hidden">
+    <div className="min-h-screen flex bg-[var(--bg-main)] text-[var(--text-main)] font-sans relative overflow-hidden transition-colors duration-500">
       {/* Mobile Backdrop Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -42,8 +42,8 @@ export default function AdminLayout() {
       </AnimatePresence>
 
       {/* Sidebar - Evolved Command Bridge */}
-      <aside className={`fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col shadow-2xl z-[70] transition-transform duration-500 ease-out grid-pattern h-screen ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:static'}`}>
-        <div className="p-8 border-b border-slate-100 relative scanline">
+      <aside className={`fixed inset-y-0 left-0 w-72 bg-[var(--header-bg)] backdrop-blur-2xl border-r border-[var(--border-main)] flex-shrink-0 flex flex-col shadow-2xl z-[70] transition-transform duration-500 ease-out grid-pattern h-screen ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:static'}`}>
+        <div className="p-8 border-b border-[var(--border-main)] relative scanline">
           <Link to="/" className="text-2xl font-black italic tracking-tighter text-blue-600 block mb-8 uppercase relative z-10">
             RACE<span className="text-slate-900">Hub</span>
           </Link>
@@ -52,7 +52,7 @@ export default function AdminLayout() {
           <Link
             to={`/profile/${user?.slug || user?.id}`}
             onClick={() => setIsSidebarOpen(false)}
-            className="flex items-center gap-3 p-3 -mx-2 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100"
+            className="flex items-center gap-3 p-3 -mx-2 rounded-2xl hover:bg-[var(--glass-bg)] transition-all group border border-transparent hover:border-[var(--glass-border)]"
           >
             <div className="w-11 h-11 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold text-lg group-hover:bg-blue-600 group-hover:text-white transition-all overflow-hidden border border-blue-200/30">
               {user?.profilePicture ? (
@@ -101,7 +101,7 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="p-6 mt-auto border-t border-slate-100 bg-slate-50/50 space-y-4">
+        <div className="p-6 mt-auto border-t border-[var(--border-main)] bg-[var(--glass-bg)] space-y-4">
           {/* Mobile Secondary Indicators */}
           <div className="lg:hidden flex items-center justify-between px-2 mb-4">
             <LatencyIndicator variant="pill" />
@@ -119,9 +119,9 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main content Bridge */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50/30">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-main)]">
         {/* Mobile Header / Top Command Bar */}
-        <header className="h-[80px] bg-white/90 backdrop-blur-2xl border-b border-slate-200 px-6 sm:px-10 flex items-center justify-between z-50 shadow-sm sticky top-0 grid-pattern">
+        <header className="h-[80px] bg-[var(--header-bg)] backdrop-blur-2xl border-b border-[var(--border-main)] px-6 sm:px-10 flex items-center justify-between z-50 shadow-sm sticky top-0 grid-pattern">
           <div className="flex items-center gap-6 overflow-hidden">
             {/* Hamburger Trigger */}
             <button 

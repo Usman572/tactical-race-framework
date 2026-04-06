@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useRaces } from "../../context/RaceContext";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import CommsChannel from "../../components/CommsChannel";
 import MissionCertificate from "../../components/MissionCertificate";
 import FactionDominance from "../../components/FactionDominance";
@@ -38,12 +39,18 @@ export default function RaceDetails() {
     const isClosed = deadline && new Date() > deadline;
 
     if (isLocalLoading) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)]">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-glow-primary"></div>
         </div>
     );
 
-    if (!race) return <div className="text-center py-20 text-slate-500 font-bold">Race not found.</div>;
+    if (!race) return (
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)]">
+            <div className="text-center py-20 text-[var(--text-main)] font-black uppercase tracking-[0.4em] opacity-40 italic">
+                ⚠️ Race Intel Not Found
+            </div>
+        </div>
+    );
 
     const handleJoinRequest = async (payload) => {
         if (!user) return;
@@ -51,7 +58,6 @@ export default function RaceDetails() {
         const res = await requestToJoin(id, payload);
         setIsRequesting(false);
         setRequestResult(res);
-        // Refresh race data to update participant count
         if (res.success) {
             const updated = await getRaceById(id);
             if (updated.success) setRace(updated.data);
@@ -92,108 +98,151 @@ export default function RaceDetails() {
     const joinDisabled = joined || hasPendingRequest || isFull || isClosed;
 
     return (
-        <>
-            {showModal && (
-                <RegistrationModal
-                    race={race}
-                    onClose={() => { setShowModal(false); setRequestResult(null); }}
-                    onSubmit={handleJoinRequest}
-                    isSubmitting={isRequesting}
-                    result={requestResult}
-                />
-            )}
+        <div className="bg-[var(--bg-main)] min-h-screen transition-colors duration-500 pb-20 relative overflow-hidden">
+            <AnimatePresence>
+                {showModal && (
+                    <RegistrationModal
+                        race={race}
+                        onClose={() => { setShowModal(false); setRequestResult(null); }}
+                        onSubmit={handleJoinRequest}
+                        isSubmitting={isRequesting}
+                        result={requestResult}
+                    />
+                )}
+            </AnimatePresence>
 
-            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-10 mb-20 lg:mb-10">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-600/5 blur-[150px] rounded-full animate-pulse-soft" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-orange-600/5 blur-[150px] rounded-full animate-pulse-soft" style={{ animationDelay: '2s' }} />
+            </div>
+
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-7xl mx-auto py-12 px-4 sm:px-10 relative z-10"
+            >
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Main Intel Column */}
-                    <div className="lg:col-span-2 flex flex-col gap-8">
-                        <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden glass-premium grid-pattern">
-                            <div className="bg-slate-50/50 p-6 sm:p-10 border-b border-slate-200 scanline relative">
-                                <div className="flex flex-wrap items-center gap-3 mb-4">
-                                    <span className="bg-blue-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                    <div className="lg:col-span-2 flex flex-col gap-10">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-[var(--header-bg)] rounded-[3rem] shadow-2xl border border-[var(--border-main)] overflow-hidden backdrop-blur-3xl relative group"
+                        >
+                            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:30px_30px]" />
+                            <div className="p-8 sm:p-12 border-b border-[var(--border-main)] relative">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <div className="w-24 h-24 border-2 border-blue-600 rounded-full flex items-center justify-center animate-spin-slow">
+                                        <div className="w-16 h-16 border-2 border-orange-500 rounded-full" />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-3 mb-8">
+                                    <motion.span 
+                                        initial={{ x: -10, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        className="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-glow-primary"
+                                    >
                                         {race.type}
-                                    </span>
+                                    </motion.span>
                                     {race.sector && (
-                                        <span className="bg-slate-800 text-white px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest">
+                                        <span className="bg-[var(--bg-main)] text-blue-500 border border-blue-500/30 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] italic">
                                             🗺 {race.sector}
                                         </span>
                                     )}
-                                    {isFull && <span className="bg-red-600/10 text-red-600 border border-red-500/20 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest">🔴 Full</span>}
-                                    {isClosed && !isFull && <span className="bg-amber-500/10 text-amber-600 border border-amber-500/20 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest">⛔ Closed</span>}
+                                    {isFull && <span className="bg-red-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-glow-primary">🔴 FULL</span>}
+                                    {isClosed && !isFull && <span className="bg-amber-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-glow-primary">⛔ CLOSED</span>}
                                 </div>
-                                <h1 className="text-3xl sm:text-5xl font-black italic tracking-tighter text-slate-900 mt-2 mb-4 uppercase relative z-20">{race.name}</h1>
-                                <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs relative z-20">
-                                    <span className="flex items-center gap-2">📍 {race.location}</span>
-                                    <span className="flex items-center gap-2">📅 {new Date(race.date).toLocaleDateString()}</span>
-                                    <span className="flex items-center gap-2 border-l border-slate-300 pl-4 sm:pl-6">📏 {race.trackLength || '0'} KM</span>
-                                    <span className="flex items-center gap-2 text-blue-600">👥 {race.participants?.length || 0}{race.maxParticipants ? ` / ${race.maxParticipants}` : ''} OPERATIVES</span>
+
+                                <h1 className="text-4xl sm:text-7xl font-black italic tracking-tighter text-[var(--text-main)] mb-6 uppercase leading-none">
+                                    {race.name.split(' ').map((word, i) => (
+                                        <span key={i} className={i % 2 === 1 ? 'text-blue-600' : ''}>{word} </span>
+                                    ))}
+                                </h1>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-[var(--text-main)] font-black uppercase tracking-[0.2em] text-[10px] bg-[var(--bg-main)]/40 p-6 rounded-[2rem] border border-[var(--border-main)] backdrop-blur-md">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="opacity-30 text-[8px]">Location</span>
+                                        <span className="italic">📍 {race.location}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="opacity-30 text-[8px]">Deployment</span>
+                                        <span className="italic">📅 {new Date(race.date).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="opacity-30 text-[8px]">Course</span>
+                                        <span className="italic text-blue-500">📏 {race.trackLength || '0'} KM</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="opacity-30 text-[8px]">Status</span>
+                                        <span className="italic text-green-500">👥 {race.participants?.length || 0}{race.maxParticipants ? ` / ${race.maxParticipants}` : ''} OPS</span>
+                                    </div>
                                 </div>
 
                                 {/* Capacity Bar */}
                                 {race.maxParticipants && (
-                                    <div className="mt-5 relative z-20">
-                                        <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                                    <div className="mt-8">
+                                        <div className="flex justify-between text-[9px] font-black opacity-40 text-[var(--text-main)] uppercase tracking-[0.3em] mb-3 italic">
                                             <span>Deployment Capacity</span>
-                                            <span className={slotsLeft <= 2 ? 'text-red-500' : 'text-slate-400'}>{slotsLeft <= 0 ? 'Full' : `${slotsLeft} slots remaining`}</span>
+                                            <span className={slotsLeft <= 2 ? 'text-red-500 opacity-100' : ''}>{slotsLeft <= 0 ? 'STATUS: FULL' : `${slotsLeft} SLOTS REMAINING`}</span>
                                         </div>
-                                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full rounded-full transition-all duration-1000 ${isFull ? 'bg-red-500' : capacityPct > 75 ? 'bg-amber-500' : 'bg-blue-600'}`}
-                                                style={{ width: `${capacityPct}%` }}
+                                        <div className="h-2 bg-[var(--bg-main)] rounded-full overflow-hidden border border-[var(--border-main)]">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${capacityPct}%` }}
+                                                transition={{ duration: 1.5, ease: "circOut" }}
+                                                className={`h-full rounded-full ${isFull ? 'bg-red-600 shadow-glow-primary' : capacityPct > 75 ? 'bg-amber-500' : 'bg-blue-600 shadow-glow-primary'}`}
                                             />
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Deadline */}
-                                {deadline && !isClosed && (
-                                    <div className="mt-4 relative z-20 inline-flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
-                                        <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">⏳ Registration closes {deadline.toLocaleDateString()}</span>
                                     </div>
                                 )}
                             </div>
 
                             {race.linkedEvent && (
-                                <div className="bg-gradient-to-r from-red-600/10 via-black to-red-600/10 border-b border-red-500/20 px-6 sm:px-10 py-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                                <motion.div 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="bg-gradient-to-r from-red-600/20 via-blue-600/10 to-red-600/20 border-b border-[var(--border-main)] px-8 sm:px-12 py-6 flex items-center justify-between"
+                                >
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-3 h-3 rounded-full bg-red-600 animate-ping shadow-glow-primary" />
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">High-Stakes Event Active</span>
-                                            <h3 className="text-sm font-black text-white uppercase tracking-tight">{race.linkedEvent.title}</h3>
+                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em] italic mb-1">High-Stakes Event Active</span>
+                                            <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight italic">{race.linkedEvent.title}</h3>
                                         </div>
                                     </div>
                                     {race.linkedEvent.type === 'XP_BOOST' && (
-                                        <div className="bg-red-500/10 border border-red-500/30 px-3 py-1 rounded-full">
-                                            <span className="text-[10px] font-black text-red-500 uppercase">x{race.linkedEvent.multiplier} XP Multiplier</span>
+                                        <div className="bg-red-600/20 border border-red-500/30 px-5 py-2 rounded-full shadow-glow-primary">
+                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">x{race.linkedEvent.multiplier} XP BOOST</span>
                                         </div>
                                     )}
-                                </div>
+                                </motion.div>
                             )}
 
-                            <div className="p-6 sm:p-10">
+                            <div className="p-8 sm:p-12 space-y-12">
                                 {race.status === 'Completed' && joined && (
-                                    <div className="mb-12">
+                                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                                         <MissionCertificate race={race} user={user} />
-                                    </div>
+                                    </motion.div>
                                 )}
 
                                 {race.linkedEvent && (
-                                    <div className="mb-12">
+                                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                                         <FactionDominance participants={race.participants} />
-                                    </div>
+                                    </motion.div>
                                 )}
 
-                                <div className="mb-12">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Mission Participants</h4>
+                                <div>
+                                    <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-8 italic opacity-60">Deployed Operatives</h4>
                                     {race.participants?.length > 0 ? (
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="flex flex-wrap gap-4">
                                             {race.participants.map((p, idx) => (
                                                 <Link
                                                     key={idx}
                                                     to={`/profile/${p.slug || (typeof p === 'object' ? p._id : p)}`}
-                                                    className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-2xl text-xs font-black italic uppercase hover:border-blue-500 hover:text-blue-600 transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                                                    className="bg-[var(--bg-main)]/60 border border-[var(--border-main)] text-[var(--text-main)] px-5 py-3 rounded-2xl text-[10px] font-black italic uppercase hover:border-blue-500 hover:text-blue-500 transition-all flex items-center gap-3 shadow-xl backdrop-blur-md group/op active:scale-95"
                                                 >
-                                                    <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] not-italic">
+                                                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-500 flex items-center justify-center text-xs not-italic font-black border border-blue-500/30 group-hover/op:bg-blue-600 group-hover/op:text-white transition-colors">
                                                         {(typeof p === 'object' ? p.name : 'V').charAt(0)}
                                                     </div>
                                                     {typeof p === 'object' ? p.name : 'Operative'}
@@ -201,75 +250,81 @@ export default function RaceDetails() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-slate-400 italic font-medium text-xs">No operatives deployed yet. Waiting for signal...</p>
+                                        <div className="bg-[var(--bg-main)]/40 border border-dashed border-[var(--border-main)] p-12 rounded-[2.5rem] text-center">
+                                            <p className="text-[var(--text-main)] opacity-30 italic font-black uppercase text-[10px] tracking-widest">Waiting for tactical deployment signal...</p>
+                                        </div>
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-4">
+                                <div className="flex flex-wrap items-center gap-6 pt-6">
                                     <button
                                         onClick={() => !joinDisabled && setShowModal(true)}
                                         disabled={joinDisabled}
-                                        className={`px-8 sm:px-12 py-4 sm:py-5 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] shadow-2xl transition-all w-full md:w-auto active:scale-95 ${joined
-                                            ? "bg-black text-white shadow-black/20 cursor-default"
+                                        className={`px-10 sm:px-14 py-6 sm:py-7 rounded-[2rem] font-black text-[11px] sm:text-xs uppercase tracking-[0.4em] italic shadow-2xl transition-all w-full md:w-auto active:scale-95 relative overflow-hidden group/btn ${joined
+                                            ? "bg-[var(--bg-main)] text-green-500 border border-green-500/30 cursor-default"
                                             : hasPendingRequest
-                                                ? "bg-slate-100 text-slate-400 cursor-default border border-slate-200"
+                                                ? "bg-[var(--bg-main)] text-blue-500/40 border border-[var(--border-main)] cursor-default"
                                                 : (isFull || isClosed)
-                                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                                                    : "bg-blue-600 text-white hover:bg-black shadow-blue-500/30 hover:-translate-y-1"
+                                                    ? "bg-[var(--bg-main)] text-red-500/40 border border-[var(--border-main)] cursor-not-allowed"
+                                                    : "bg-blue-600 text-white hover:bg-black shadow-glow-primary hover:-translate-y-1"
                                             }`}
                                     >
-                                        {getJoinButtonLabel()}
+                                        <span className="relative z-10">{getJoinButtonLabel()}</span>
+                                        {!joinDisabled && <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity" />}
                                     </button>
 
                                     {joined && (
-                                        <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                                            <Link
-                                                to={`/races/${id}/hud`}
-                                                className="px-8 sm:px-12 py-4 sm:py-5 bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] shadow-2xl shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all text-center flex-1 md:flex-initial"
-                                            >
-                                                ⚡ Engage HUD
-                                            </Link>
-                                        </div>
+                                        <Link
+                                            to={`/races/${id}/hud`}
+                                            className="px-10 sm:px-14 py-6 sm:py-7 bg-black text-white hover:bg-blue-700 rounded-[2rem] font-black text-[11px] sm:text-xs uppercase tracking-[0.4em] italic shadow-glow-primary hover:-translate-y-1 active:scale-95 transition-all text-center flex-1 md:flex-initial"
+                                        >
+                                            ⚡ Engage Live HUD
+                                        </Link>
                                     )}
 
                                     {canManage && (
                                         <button
                                             onClick={handleDelete}
                                             disabled={isDeleting}
-                                            className="px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all w-full md:w-auto disabled:opacity-50"
+                                            className="px-8 py-6 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] italic border-2 border-red-600/20 text-red-600 hover:bg-red-600 hover:text-white transition-all w-full md:w-auto disabled:opacity-50"
                                         >
-                                            {isDeleting ? "Deleting..." : "🗑️ TERMINATE"}
+                                            {isDeleting ? "Aborting..." : "🗑️ Terminate mission"}
                                         </button>
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
 
                         {joined && (
-                            <div className="md:hidden">
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:hidden">
                                 <CommsChannel raceId={id} />
-                            </div>
+                            </motion.div>
                         )}
                     </div>
 
                     {/* Secondary Intel Column (Sidebar) */}
-                    <div className="flex flex-col gap-8">
+                    <div className="flex flex-col gap-10">
                         {joined && (
-                            <div className="hidden md:block">
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="hidden md:block">
                                 <CommsChannel raceId={id} />
-                            </div>
+                            </motion.div>
                         )}
 
-                        <div className="bg-white rounded-3xl border border-slate-100 p-8 glass-premium grid-pattern">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Mission Support</h4>
-                            <div className="space-y-4">
-                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[11px] font-black uppercase tracking-tight text-slate-900 mb-1">Encrypted Bridge</p>
-                                    <p className="text-[10px] text-slate-500 leading-relaxed font-medium">All telemetry and comms are routed through the Quantum Signal Bridge for maximum security.</p>
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-[var(--header-bg)] rounded-[3rem] border border-[var(--border-main)] p-10 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-grid-white/[0.01] bg-[length:20px_20px]" />
+                            <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] mb-10 italic opacity-60">Support Intel</h4>
+                            <div className="space-y-6 relative z-10">
+                                <div className="p-6 rounded-[2rem] bg-[var(--bg-main)]/50 border border-[var(--border-main)] group hover:border-blue-600/30 transition-colors">
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] mb-2 italic">Encrypted Bridge</p>
+                                    <p className="text-[10px] text-[var(--text-main)] opacity-40 leading-relaxed font-bold uppercase">Telemetry and comms are routed via Quantum Signal Bridge V4.2.</p>
                                 </div>
-                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[11px] font-black uppercase tracking-tight text-slate-900 mb-1">Operative Safety</p>
-                                    <p className="text-[10px] text-slate-500 leading-relaxed font-medium">Wear biometric monitors at all times during deployment. Abort if signal latency exceeds 500ms.</p>
+                                <div className="p-6 rounded-[2rem] bg-[var(--bg-main)]/50 border border-[var(--border-main)] group hover:border-orange-500/30 transition-colors">
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] mb-2 italic">Operational Safety</p>
+                                    <p className="text-[10px] text-[var(--text-main)] opacity-40 leading-relaxed font-bold uppercase">Biometric monitoring mandatory. Abort protocol active if signal drops.</p>
                                 </div>
                             </div>
 
@@ -277,15 +332,15 @@ export default function RaceDetails() {
                                 <button
                                     onClick={handleLeave}
                                     disabled={isLeaving}
-                                    className="mt-8 w-full py-4 rounded-xl border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                                    className="mt-12 w-full py-5 rounded-2xl border border-red-600/20 text-red-600 text-[10px] font-black uppercase tracking-[0.3em] italic hover:bg-red-600 hover:text-white transition-all active:scale-95 shadow-lg"
                                 >
-                                    {isLeaving ? "Exiting Bridge..." : "Detach From Mission"}
+                                    {isLeaving ? "Exiting Bridge..." : "Detach from mission"}
                                 </button>
                             )}
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
-            </div>
-        </>
+            </motion.div>
+        </div>
     );
 }
