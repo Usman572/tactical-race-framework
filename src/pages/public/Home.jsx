@@ -119,13 +119,13 @@ const GuestHero = () => (
         <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
         {/* Floating Accents */}
-        <motion.div 
+        <motion.div
             style={{ y: useTransform(useScroll().scrollY, [0, 500], [0, -100]) }}
             className="absolute top-[20%] right-[10%] text-white/5 font-black text-9xl italic pointer-events-none select-none tracking-tighter"
         >
             SPD
         </motion.div>
-        <motion.div 
+        <motion.div
             style={{ y: useTransform(useScroll().scrollY, [0, 500], [0, 100]) }}
             className="absolute bottom-[20%] left-[5%] text-white/5 font-black text-9xl italic pointer-events-none select-none tracking-tighter"
         >
@@ -182,85 +182,112 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="py-20 text-center bg-[var(--header-bg)] border-b border-[var(--border-main)] w-full px-6 backdrop-blur-sm"
+                className="py-20 text-center bg-[var(--header-bg)] border-b border-[var(--border-main)] w-full px-6 backdrop-blur-sm relative overflow-hidden"
             >
-                <div className="max-w-7xl mx-auto">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_var(--accent-primary-glow)_0%,_transparent_50%)] opacity-20"></div>
+
+                <div className="max-w-7xl mx-auto relative z-10">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.2, duration: 0.5 }}
-                        className="inline-block px-4 py-1.5 mb-6 bg-blue-500/10 border border-blue-500/20 rounded-full"
+                        className="inline-block px-4 py-1.5 mb-8 bg-blue-600/10 border border-blue-500/20 rounded-full"
                     >
-                        <span className="text-blue-500 text-[10px] font-black uppercase tracking-widest">Active Status: Standard Access</span>
+                        <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em]">System Link: Stable // Welcome Operative</span>
                     </motion.div>
-                    <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter text-[var(--text-main)] leading-tight">
+                    <h1 className="text-6xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9] italic uppercase">
                         <span className="block">DOMINATE</span>
-                        <span className="text-blue-600 block">THE TRACK</span>
+                        <span className="text-blue-600 block">THE CIRCUIT</span>
                     </h1>
-                    <p className="text-xl opacity-60 max-w-2xl mx-auto mb-10 font-medium">
-                        Welcome back, {user.name}. Your next legacy waits on the asphalt. Ready to push your limits?
+                    <p className="text-xl md:text-2xl opacity-40 max-w-2xl mx-auto mb-12 font-medium italic">
+                        Greetings, {user.name}. Your next tactical engagement is ready.
                     </p>
-                    <div className="flex justify-center gap-4">
-                        <Link to="/races/new" className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black hover:bg-blue-700 shadow-xl shadow-blue-500/20 text-lg uppercase tracking-widest transition-all hover:-translate-y-1 active:scale-95">
-                            Add New Race
+                    <div className="flex justify-center gap-6">
+                        <Link to="/races/new" className="group relative bg-blue-600 text-white px-12 py-5 rounded-2xl font-black shadow-xl shadow-blue-500/20 text-xs uppercase tracking-[0.3em] transition-all hover:scale-105 active:scale-95 overflow-hidden">
+                            <span className="relative z-10">Initialize Race</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </Link>
                     </div>
                 </div>
             </motion.section>
 
             {/* Tactical Mapping Section */}
-            <section className="py-20 px-6 bg-[var(--bg-main)]">
+            <section className="py-24 px-6 relative">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="flex items-center justify-between mb-12"
+                        className="flex items-center gap-6 mb-16"
                     >
-                        <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter flex items-center gap-4">
-                            <span className="w-3 h-10 bg-blue-500 block rounded-full"></span>
-                            PROTOCOL: SYSTEM DASHBOARD
+                        <div className="w-2 h-10 bg-blue-600 rounded-full shadow-glow-primary" />
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic">
+                            TACTICAL <span className="text-blue-600">OVERVIEW</span>
                         </h2>
                     </motion.div>
 
-                    <RaceMap races={races} />
+                    <div className="rounded-[3rem] overflow-hidden border border-[var(--border-main)] shadow-2xl bg-[var(--header-bg)]">
+                        <RaceMap races={races} />
+                    </div>
                 </div>
             </section>
 
             {/* Races Grid */}
-            <section className="py-20 px-6">
+            <section className="py-24 px-6 bg-[var(--header-bg)]/30">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="flex items-center justify-between mb-12"
+                        className="flex items-center gap-6 mb-16"
                     >
-                        <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter flex items-center gap-4">
-                            <span className="w-3 h-10 bg-orange-500 block rounded-full"></span>
-                            PROTOCOL: ACTIVE RACES
+                        <div className="w-2 h-10 bg-orange-600 rounded-full shadow-glow-secondary" />
+                        <h2 className="text-4xl font-black tracking-tighter uppercase italic">
+                            ACTIVE <span className="text-orange-600">ENGAGEMENTS</span>
                         </h2>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <motion.div
+                        variants={{
+                            hidden: { opacity: 0 },
+                            show: {
+                                opacity: 1,
+                                transition: {
+                                    staggerChildren: 0.1
+                                }
+                            }
+                        }}
+                        initial="hidden"
+                        whileInView="show"
+                        viewport={{ once: true }}
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+                    >
                         {loading ? (
                             Array(6).fill(0).map((_, i) => <RaceCardSkeleton key={i} />)
                         ) : races.length > 0 ? (
-                            races.map((race, index) => (
-                                <RaceCard
+                            races.map((race) => (
+                                <motion.div
                                     key={race._id}
-                                    race={race}
-                                    user={user}
-                                />
+                                    variants={{
+                                        hidden: { opacity: 0, y: 30 },
+                                        show: { opacity: 1, y: 0 }
+                                    }}
+                                >
+                                    <RaceCard
+                                        race={race}
+                                        user={user}
+                                    />
+                                </motion.div>
                             ))
                         ) : (
-                            <div className="col-span-full py-20 bg-[var(--glass-bg)] backdrop-blur-md rounded-[2.5rem] border border-[var(--border-main)] text-center shadow-2xl">
-                                <span className="opacity-40 font-black uppercase tracking-[0.2em] text-[var(--text-main)]">
-                                    No active engagements found in the matrix
+                            <div className="col-span-full py-32 bg-[var(--glass-bg)] backdrop-blur-md rounded-[3rem] border border-[var(--border-main)] text-center shadow-2xl relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_var(--accent-primary-glow)_0%,_transparent_70%)] opacity-0 group-hover:opacity-10 transition-opacity duration-1000"></div>
+                                <span className="opacity-20 font-black uppercase tracking-[0.5em] text-sm animate-pulse italic">
+                                    No active data streams detected
                                 </span>
                             </div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             </section>
         </div>

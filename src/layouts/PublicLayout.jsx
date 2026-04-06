@@ -106,7 +106,7 @@ export default function PublicLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300">
+    <div className="min-h-screen flex flex-col font-sans bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-500">
       {/* Real-Time Toast Hub */}
       <div className="fixed top-[120px] right-8 z-[100] flex flex-col gap-4 pointer-events-none">
         <AnimatePresence>
@@ -174,7 +174,7 @@ export default function PublicLayout() {
       </div>
 
       {/* Header / Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white backdrop-blur-2xl border-b border-[var(--border-main)] px-6 lg:px-12 h-[90px] flex items-center justify-between transition-all duration-500 overflow-hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--header-bg)] backdrop-blur-2xl border-b border-[var(--border-main)] px-6 lg:px-12 h-[90px] flex items-center justify-between transition-all duration-500 overflow-hidden">
         {/* Left Section: Logo */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-3 group">
@@ -188,9 +188,9 @@ export default function PublicLayout() {
           </Link>
 
           <nav className="hidden lg:flex items-center gap-6 ml-4">
-            <Link to="/" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">Home</Link>
-            <Link to="/leaderboard" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">Leaderboard</Link>
-            <Link to="/races" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">Races</Link>
+            <Link to="/" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all hover:-translate-y-0.5">Home</Link>
+            <Link to="/leaderboard" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all hover:-translate-y-0.5">Leaderboard</Link>
+            <Link to="/races" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-blue-500 transition-all hover:-translate-y-0.5">Races</Link>
           </nav>
         </div>
 
@@ -201,7 +201,7 @@ export default function PublicLayout() {
 
         <div className="hidden sm:flex items-center gap-3">
           {user && (
-            <div className="flex items-center gap-4 bg-slate-50/50 backdrop-blur-md rounded-2xl border border-slate-100 p-1.5 pr-4 shadow-sm hover:border-blue-500/30 transition-all group">
+            <div className="flex items-center gap-4 bg-[var(--glass-bg)] backdrop-blur-md rounded-2xl border border-[var(--border-main)] p-1.5 pr-4 shadow-sm hover:border-blue-500/30 transition-all group">
               <XPTracker variant="minimal" />
 
               <div className="w-px h-6 bg-slate-200" />
@@ -295,7 +295,7 @@ export default function PublicLayout() {
       </main>
 
       {/* Mobile Command Bridge (Bottom Dock) */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-2xl border-t border-slate-200 px-6 py-4 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[var(--header-bg)] backdrop-blur-2xl border-t border-[var(--border-main)] px-6 py-4 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
         <Link to="/" className={`flex flex-col items-center gap-1 ${location.pathname === '/' ? 'text-blue-600' : 'text-slate-400 opacity-60'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
           <span className="text-[8px] font-black uppercase tracking-widest">Home</span>

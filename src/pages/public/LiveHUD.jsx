@@ -4,6 +4,7 @@ import { useRaces } from "../../context/RaceContext";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import TacticalHUD from "../../components/TacticalHUD";
+import CommsChannel from "../../components/CommsChannel";
 
 export default function LiveHUD() {
     const { id } = useParams();
@@ -37,7 +38,17 @@ export default function LiveHUD() {
         }
     }, [race?.startTime]);
 
-    if (!race) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-blue-500 font-black italic">INITIALIZING LINK...</div>;
+    if (!race) return (
+        <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center">
+            <motion.div 
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-blue-500 font-black italic tracking-[0.5em] uppercase text-xl"
+            >
+                Establishing Uplink...
+            </motion.div>
+        </div>
+    );
 
     const handleCheckIn = async () => {
         await checkIn(race._id);
@@ -70,48 +81,59 @@ export default function LiveHUD() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white pt-24 pb-20 px-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] pt-24 pb-20 px-6 relative overflow-hidden transition-colors duration-500 font-tactical">
             {/* Background Accents */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full"></div>
-                <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-600/10 blur-[120px] rounded-full"></div>
+                <div className="absolute top-1/4 -left-20 w-[40rem] h-[40rem] bg-blue-600/5 blur-[150px] rounded-full animate-pulse-soft"></div>
+                <div className="absolute bottom-1/4 -right-20 w-[40rem] h-[40rem] bg-purple-600/5 blur-[150px] rounded-full animate-pulse-soft" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute inset-0 bg-grid-white/[0.02] bg-[length:40px_40px]"></div>
             </div>
 
-            <div className="max-w-6xl mx-auto relative z-10">
+            <div className="max-w-7xl mx-auto relative z-10">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8"
+                >
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-4">
-                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                            <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest leading-none">
-                                {race.status === 'Completed' ? 'Mission Accomplished' : 'Tactical HUD Active'}
+                        <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded-full mb-6">
+                            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping shadow-glow-primary"></span>
+                            <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] italic">
+                                {race.status === 'Completed' ? 'MISSION STATUS: ACCOMPLISHED' : 'TACTICAL HUD // FEED ACTIVE'}
                             </span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase">
-                            {race.name}
+                        <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter uppercase leading-none">
+                            {race.name.split(' ').map((word, i) => (
+                                <span key={i} className={i % 2 === 1 ? 'text-blue-600' : ''}>{word} </span>
+                            ))}
                         </h1>
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-sm mt-2">{race.location}</p>
+                        <p className="text-[var(--text-main)] opacity-30 font-black uppercase tracking-[0.5em] text-xs mt-4 italic">COORD: {race.location} // SECTOR {race.sector || 'ALPHA'}</p>
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-6">
                         {isCreator && race.status !== 'Completed' && !race.startTime && (
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileInView={{ opacity: 1 }}
+                                initial={{ opacity: 0 }}
                                 onClick={handleStartCountdown}
-                                className="px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl shadow-xl shadow-red-600/20 transition-all uppercase tracking-widest text-xs italic"
+                                className="px-10 py-5 bg-red-600 text-white font-black rounded-2xl shadow-glow-primary transition-all uppercase tracking-[0.3em] text-[10px] italic shadow-red-600/40"
                             >
                                 Ignite Countdown
-                            </button>
+                            </motion.button>
                         )}
                         {isCreator && race.status === 'Active' && timeLeft === 0 && !isFinishing && (
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05, y: -2 }}
                                 onClick={() => setIsFinishing(true)}
-                                className="px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl shadow-xl shadow-green-600/20 transition-all uppercase tracking-widest text-xs italic"
+                                className="px-10 py-5 bg-emerald-600 text-white font-black rounded-2xl shadow-glow-primary transition-all uppercase tracking-[0.3em] text-[10px] italic shadow-emerald-600/40"
                             >
                                 Secure Finish Line
-                            </button>
+                            </motion.button>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Countdown / Race Status */}
                 <AnimatePresence mode="wait">
@@ -120,58 +142,73 @@ export default function LiveHUD() {
                             key="countdown"
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 1.2, opacity: 0 }}
-                            className="flex flex-col items-center justify-center p-20 glass-premium rounded-[3rem] mb-12"
+                            exit={{ scale: 2, opacity: 0, filter: "blur(20px)" }}
+                            className="flex flex-col items-center justify-center p-20 bg-[var(--header-bg)] border border-[var(--border-main)] backdrop-blur-3xl rounded-[4rem] mb-16 shadow-2xl relative overflow-hidden"
                         >
-                            <div className="text-[12rem] md:text-[18rem] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-blue-500 to-indigo-600 leading-none tracking-tighter">
+                            <div className="absolute inset-0 bg-grid-white/[0.03] bg-[length:20px_20px]" />
+                            <div className="text-[14rem] md:text-[22rem] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-blue-500 to-indigo-600 leading-none tracking-tighter drop-shadow-[0_0_80px_rgba(37,99,235,0.3)] animate-pulse-soft">
                                 {timeLeft}
                             </div>
-                            <div className="text-2xl font-black uppercase tracking-[0.5em] text-blue-400 -mt-10">T-Minus to Burn</div>
+                            <div className="text-3xl font-black uppercase tracking-[0.8em] text-blue-500 animate-pulse italic">T-Minus to Burn</div>
                         </motion.div>
                     ) : timeLeft === 0 && race.status === 'Active' ? (
                         <motion.div
                             key="engaged"
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="flex flex-col items-center justify-center p-20 bg-blue-600 shadow-[0_0_100px_rgba(37,99,235,0.4)] rounded-[3rem] mb-12"
+                            className="flex flex-col items-center justify-center p-20 bg-blue-600 shadow-[0_0_150px_rgba(37,99,235,0.5)] rounded-[4rem] mb-16 relative overflow-hidden"
                         >
-                            <div className="text-8xl md:text-9xl font-black italic tracking-tighter uppercase text-white animate-pulse">
-                                Engaged
+                             <motion.div 
+                                animate={{ x: ['100%', '-100%'] }} 
+                                transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12" 
+                            />
+                            <div className="text-8xl md:text-9xl font-black italic tracking-tighter uppercase text-white animate-bounce-slow relative z-10">
+                                ENGAGED
                             </div>
-                            <div className="text-2xl font-black uppercase tracking-[0.5em] text-white/50">Tactical Phase Active</div>
+                            <div className="text-3xl font-black uppercase tracking-[0.8em] text-white/40 italic relative z-10">Tactical Phase Active</div>
                         </motion.div>
                     ) : race.status === 'Completed' && (
                         <motion.div
                              key="podium"
                              initial={{ y: 50, opacity: 0 }}
                              animate={{ y: 0, opacity: 1 }}
-                             className="mb-12"
+                             className="mb-16"
                         >
-                            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-8 text-center text-yellow-500">🏆 Victors Podium 🏆</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-12 text-center text-yellow-500 flex items-center justify-center gap-6">
+                                <span className="h-px bg-yellow-500/30 flex-1"></span>
+                                🏆 VICTORS PODIUM 🏆
+                                <span className="h-px bg-yellow-500/30 flex-1"></span>
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                                 {[1, 2, 3].map(pos => {
                                     const victor = race.winners?.find(w => w.position === pos);
                                     return (
-                                        <div key={pos} className={`p-8 rounded-[2rem] border transition-all ${
-                                            pos === 1 ? 'bg-yellow-500/10 border-yellow-500/30 scale-105 shadow-[0_0_50px_rgba(234,179,8,0.1)]' :
-                                            pos === 2 ? 'bg-slate-300/10 border-slate-300/30' :
-                                            'bg-orange-500/10 border-orange-500/30'
-                                        }`}>
-                                            <div className="text-4xl font-black italic opacity-20 mb-4">#{pos}</div>
+                                        <motion.div 
+                                            key={pos} 
+                                            whileHover={{ y: -5 }}
+                                            className={`p-10 rounded-[3rem] border backdrop-blur-xl transition-all relative overflow-hidden ${
+                                                pos === 1 ? 'bg-yellow-500/10 border-yellow-500/30 scale-105 shadow-[0_0_50px_rgba(234,179,8,0.15)] ring-2 ring-yellow-500/20' :
+                                                pos === 2 ? 'bg-slate-300/5 border-[var(--border-main)]' :
+                                                'bg-orange-500/5 border-[var(--border-main)]'
+                                            }`}
+                                        >
+                                            <div className="absolute -top-10 -right-10 text-[10rem] font-black italic opacity-5">{pos}</div>
+                                            <div className="text-5xl font-black italic opacity-20 mb-6 text-[var(--text-main)]">#{pos}</div>
                                             {victor ? (
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-2xl font-black">
-                                                        {victor.user?.name?.substring(0, 1)}
+                                                <div className="flex items-center gap-6 relative z-10">
+                                                    <div className="w-20 h-20 rounded-[2rem] bg-[var(--bg-main)] border border-[var(--border-main)] flex items-center justify-center text-3xl font-black italic shadow-xl group">
+                                                        <span className="group-hover:scale-110 transition-transform">{victor.user?.name?.substring(0, 1)}</span>
                                                     </div>
                                                     <div>
-                                                        <div className="text-xl font-black truncate">{victor.user?.name}</div>
-                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operative Rank {victor.user?.rank}</div>
+                                                        <div className="text-2xl font-black truncate text-[var(--text-main)] uppercase tracking-tighter">{victor.user?.name}</div>
+                                                        <div className="text-[10px] font-black uppercase tracking-widest text-blue-500 mt-1 italic">Operative Clearance Level 4</div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="text-slate-600 font-black italic text-sm">NO DATA</div>
+                                                <div className="text-[var(--text-main)] opacity-10 font-black italic text-lg tracking-widest">DATA_CORRUPT</div>
                                             )}
-                                        </div>
+                                        </motion.div>
                                     );
                                 })}
                             </div>
@@ -180,53 +217,77 @@ export default function LiveHUD() {
                 </AnimatePresence>
 
                 {/* Roster Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
                     <div className="lg:col-span-2">
-                        <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-6 flex items-center gap-3">
-                            Operative Roster
-                            <span className="text-xs italic font-black px-2 py-0.5 bg-blue-600 rounded text-white">{race.participants?.length || 0}</span>
-                        </h2>
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-3xl font-black italic tracking-tighter uppercase flex items-center gap-4">
+                                OPERATIVE ROSTER
+                                <span className="text-sm italic font-black px-4 py-1 bg-blue-600 rounded-full text-white shadow-glow-primary">{race.participants?.length || 0}</span>
+                            </h2>
+                        </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <motion.div 
+                            variants={{
+                                show: { transition: { staggerChildren: 0.05 } }
+                            }}
+                            initial="hidden"
+                            animate="show"
+                            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                        >
                             {race.participants?.map(p => {
                                 const isCheckedIn = race.checkIns?.some(cid => (cid._id || cid) === (p._id || p));
                                 return (
-                                    <div key={p._id} className={`p-6 rounded-3xl border transition-all flex items-center justify-between ${
-                                        isCheckedIn ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10 opacity-60'
-                                    }`}>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-lg font-black italic overflow-hidden">
-                                                {p.profilePicture ? <img src={p.profilePicture} className="w-full h-full object-cover" /> : p.name?.substring(0, 1)}
+                                    <motion.div 
+                                        key={p._id} 
+                                        variants={{
+                                            hidden: { opacity: 0, x: -20 },
+                                            show: { opacity: 1, x: 0 }
+                                        }}
+                                        className={`p-6 rounded-[2.5rem] border backdrop-blur-xl transition-all flex items-center justify-between relative overflow-hidden group ${
+                                            isCheckedIn ? 'bg-emerald-600/5 border-emerald-500/20' : 'bg-[var(--header-bg)] border-[var(--border-main)] opacity-60'
+                                        }`}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        
+                                        <div className="flex items-center gap-5 relative z-10">
+                                            <div className="w-14 h-14 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] flex items-center justify-center text-xl font-black italic overflow-hidden shadow-lg">
+                                                {p.profilePicture ? <img src={p.profilePicture} className="w-full h-full object-cover" /> : <span className="text-blue-500">{p.name?.substring(0, 1)}</span>}
                                             </div>
                                             <div>
-                                                <div className="font-black text-lg leading-none mb-1">{p.name}</div>
-                                                <div className={`text-[9px] font-black uppercase tracking-widest ${isCheckedIn ? 'text-green-400' : 'text-slate-500'}`}>
+                                                <div className="font-black text-lg leading-none mb-1.5 uppercase tracking-tighter italic">{p.name}</div>
+                                                <div className={`text-[10px] font-black uppercase tracking-[0.2em] italic ${isCheckedIn ? 'text-emerald-500' : 'text-[var(--text-main)] opacity-30'}`}>
                                                     {isCheckedIn ? 'At Coordinates' : 'En Route'}
                                                 </div>
                                             </div>
                                         </div>
                                         
-                                        {isCheckedIn ? (
-                                            <span className="text-xl">✅</span>
-                                        ) : p._id === user?.id ? (
-                                            <button 
-                                                onClick={handleCheckIn}
-                                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black rounded-xl transition-all uppercase tracking-widest"
-                                            >
-                                                Check In
-                                            </button>
-                                        ) : null}
+                                        <div className="relative z-10">
+                                            {isCheckedIn ? (
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
+                                                    <span className="animate-pulse">✓</span>
+                                                </div>
+                                            ) : p._id === user?.id ? (
+                                                <button 
+                                                    onClick={handleCheckIn}
+                                                    className="px-6 py-3 bg-blue-600 hover:bg-black text-white text-[10px] font-black rounded-xl transition-all uppercase tracking-[0.2em] italic shadow-glow-primary active:scale-95"
+                                                >
+                                                    Check In
+                                                </button>
+                                            ) : (
+                                                <div className="w-2 h-2 rounded-full bg-[var(--text-main)] opacity-10 animate-pulse" />
+                                            )}
+                                        </div>
 
                                         {isFinishing && (
-                                            <div className="flex gap-2">
+                                            <div className="absolute right-4 flex gap-2 z-20">
                                                 {[1, 2, 3].map(pos => (
                                                     <button
                                                         key={pos}
-                                                        onClick={() => toggleWinner(p._id, pos)}
-                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black transition-all ${
+                                                        onClick={(e) => { e.stopPropagation(); toggleWinner(p._id, pos); }}
+                                                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black transition-all ${
                                                             winnersList.find(w => w.user === p._id && w.position === pos)
-                                                            ? 'bg-yellow-500 text-slate-900 border-none'
-                                                            : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                                                            ? 'bg-yellow-500 text-black border-none shadow-glow-primary scale-110'
+                                                            : 'bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] opacity-40 hover:opacity-100'
                                                         }`}
                                                     >
                                                         {pos}
@@ -234,59 +295,74 @@ export default function LiveHUD() {
                                                 ))}
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 );
                             })}
-                        </div>
+                        </motion.div>
                     </div>
 
                     {/* Mission Intel */}
-                    <div className="space-y-8">
+                    <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-10"
+                    >
                         <div>
-                            <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-6 text-blue-500">Tactical Feed</h2>
+                            <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-8 text-blue-500 border-b border-blue-500/20 pb-4">Tactical Feed</h2>
                             <TacticalHUD />
                         </div>
 
-                        <div>
-                            <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-6">Mission Ops</h2>
-                            <div className="p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] space-y-6">
-                                <div>
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-right italic font-black">Circuit Spec</div>
-                                    <div className="text-2xl font-black text-right">{race.type}</div>
+                        <div className="group">
+                            <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-8 text-[var(--text-main)] border-b border-[var(--border-main)] pb-4">Mission Specs</h2>
+                            <div className="p-10 bg-[var(--header-bg)] backdrop-blur-3xl border border-[var(--border-main)] rounded-[3rem] space-y-8 relative overflow-hidden shadow-2xl">
+                                <div className="absolute inset-0 bg-grid-white/[0.01] bg-[length:15px_15px]" />
+                                <div className="relative z-10">
+                                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mb-2 text-right italic opacity-50">Circuit Classification</div>
+                                    <div className="text-4xl font-black text-right italic uppercase tracking-tighter">{race.type}</div>
                                 </div>
-                                <div>
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-right italic font-black">Engagement Distance</div>
-                                    <div className="text-2xl font-black text-right">{race.trackLength} KM</div>
+                                <div className="relative z-10 pt-8 border-t border-[var(--border-main)]">
+                                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mb-2 text-right italic opacity-50">Engagement Vector</div>
+                                    <div className="text-4xl font-black text-right italic uppercase tracking-tighter">{race.trackLength} KM</div>
                                 </div>
-                                <div className="pt-6 border-t border-white/10">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-right italic font-black">Current Vector</div>
-                                    <div className="text-2xl font-black text-right text-blue-500">{race.location}</div>
+                                <div className="relative z-10 pt-8 border-t border-[var(--border-main)]">
+                                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mb-2 text-right italic opacity-50">Operational Sector</div>
+                                    <div className="text-3xl font-black text-right text-blue-600 italic uppercase tracking-tighter">{race.location}</div>
                                 </div>
                             </div>
                         </div>
 
                         {isFinishing && (
-                            <div className="p-8 bg-green-600 text-white rounded-[2.5rem] shadow-2xl space-y-4">
-                                <h3 className="font-black italic uppercase tracking-widest text-sm">Seal Engagement Results</h3>
-                                <p className="text-xs font-medium opacity-80">Confirm the top 3 operatives to archive this mission and award tactical points.</p>
-                                <button 
-                                    onClick={handleFinishLine}
-                                    className="w-full py-4 bg-white text-green-600 font-black rounded-2xl hover:bg-slate-100 transition-all uppercase tracking-widest text-xs"
-                                >
-                                    Transmit Final Results
-                                </button>
-                                <button 
-                                    onClick={() => { setIsFinishing(false); setWinnersList([]); }}
-                                    className="w-full py-3 bg-transparent border border-white/30 hover:bg-white/10 text-white font-black rounded-2xl transition-all uppercase tracking-widest text-[10px]"
-                                >
-                                    Abort Review
-                                </button>
-                            </div>
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="p-10 bg-emerald-600/10 border border-emerald-500/30 text-white rounded-[3rem] shadow-2xl space-y-6 backdrop-blur-xl relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-emerald-600/5 animate-pulse" />
+                                <h3 className="font-black italic uppercase tracking-[0.3em] text-[10px] text-emerald-500 relative z-10">Seal Engagement Results</h3>
+                                <p className="text-xs font-bold text-[var(--text-main)] opacity-60 leading-relaxed uppercase tracking-tighter relative z-10 italic">Select the top 3 high-impact operatives to archive this mission and distribute tactical accolades.</p>
+                                <div className="space-y-3 relative z-10">
+                                    <button 
+                                        onClick={handleFinishLine}
+                                        className="w-full py-5 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-500 transition-all uppercase tracking-[0.3em] text-[10px] italic shadow-glow-primary"
+                                    >
+                                        Transmit Final Results
+                                    </button>
+                                    <button 
+                                        onClick={() => { setIsFinishing(false); setWinnersList([]); }}
+                                        className="w-full py-4 bg-transparent border border-white/10 hover:bg-white/5 text-[var(--text-main)] opacity-40 font-black rounded-2xl transition-all uppercase tracking-[0.3em] text-[9px] italic"
+                                    >
+                                        Abort Review
+                                    </button>
+                                </div>
+                            </motion.div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             </div>
-            <CommsChannel raceId={id} isLiveHUD={true} />
+            
+            <div className="mt-16 relative z-10">
+                <CommsChannel raceId={id} isLiveHUD={true} />
+            </div>
         </div>
     );
 }

@@ -7,16 +7,16 @@ export default function PartnerLayout() {
   const { user, logout } = useAuth();
   const { pendingRequests, unreadCount } = useRaces();
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen flex bg-[var(--bg-main)] text-[var(--text-main)] font-sans transition-colors duration-500">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col">
-        <div className="p-6 border-b border-slate-100">
+      <aside className="w-64 bg-[var(--header-bg)] backdrop-blur-2xl border-r border-[var(--border-main)] flex-shrink-0 flex flex-col">
+        <div className="p-6 border-b border-[var(--border-main)]">
           <Link to="/" className="text-2xl font-bold tracking-tighter italic text-blue-600 block mb-6">
-            RACE<span className="text-slate-900">APP</span>
+            RACE<span className="text-[var(--text-main)]">APP</span>
           </Link>
 
-          <Link to={`/profile/${user?.slug || user?.id}`} className="flex items-center gap-3 hover:bg-slate-50 p-2 -m-2 rounded-xl transition-all group">
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-lg group-hover:bg-orange-600 group-hover:text-white transition-all overflow-hidden">
+          <Link to={`/profile/${user?.slug || user?.id}`} className="flex items-center gap-3 hover:bg-[var(--glass-bg)] p-2 -m-2 rounded-xl transition-all group">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg group-hover:bg-blue-600 group-hover:text-white transition-all overflow-hidden ${user?.role === 'admin' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
               {user?.profilePicture ? (
                 <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
               ) : (
@@ -61,7 +61,7 @@ export default function PartnerLayout() {
 
           <Link
             to="/messages"
-            className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-600 font-bold transition-all border border-transparent hover:border-slate-200"
+            className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-[var(--glass-bg)] text-[var(--text-main)] font-black transition-all border border-transparent hover:border-[var(--glass-border)]"
           >
             <div className="flex items-center gap-2">
               <span>📩</span>
@@ -86,7 +86,7 @@ export default function PartnerLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-8 bg-[var(--color-bg-main)] overflow-y-auto">
+      <main className="flex-1 p-8 bg-[var(--bg-main)] overflow-y-auto transition-colors duration-500">
         <Breadcrumbs />
         <Outlet />
       </main>

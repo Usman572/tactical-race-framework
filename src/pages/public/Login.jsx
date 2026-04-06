@@ -1,18 +1,20 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function Login() {
     const navigate = useNavigate();
     const { login } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
     const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError("");
+        setIsSubmitting(true);
 
         const result = await login({ email, password });
 
@@ -27,62 +29,123 @@ export default function Login() {
             }
         } else {
             setError(result.message);
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="max-w-md mx-auto py-16 px-4">
-            <div className="text-center mb-10">
-                <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2">
-                    WELCOME <span className="text-blue-600 italic">BACK</span>
-                </h1>
-                <p className="text-slate-500 text-lg">Log in to your account.</p>
-                {error && <p className="text-red-500 mt-2">{error}</p>}
+        <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[var(--bg-main)] relative overflow-hidden">
+            {/* Cinematic Background Elements */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse-soft" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse-soft" style={{ animationDelay: '2s' }} />
             </div>
 
-            <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 space-y-6">
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                    <input
-                        type="email"
-                        required
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-400"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@company.com"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
-                    <input
-                        type="password"
-                        required
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:border-blue-500 focus:ring-4 focus://blue-500/10 outline-none transition-all placeholder:text-slate-400"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                    />
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-md w-full relative z-10"
+            >
+                <div className="text-center mb-10">
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="inline-block px-4 py-1.5 mb-6 bg-blue-600/10 border border-blue-500/20 rounded-full"
+                    >
+                        <span className="text-blue-500 text-[9px] font-black uppercase tracking-[0.3em]">Secure Auth Terminal // 04</span>
+                    </motion.div>
+                    <h1 className="text-5xl font-black tracking-tighter text-[var(--text-main)] mb-4 italic uppercase">
+                        ACCESS <span className="text-blue-600">PORTAL</span>
+                    </h1>
+                    <p className="text-[var(--text-main)] opacity-40 text-sm font-bold uppercase tracking-widest italic">Identity verification required</p>
+                    {error && (
+                        <motion.p 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-red-500 mt-4 text-xs font-black uppercase tracking-widest bg-red-500/10 py-2 border border-red-500/20 rounded-lg"
+                        >
+                            ⚠️ Error: {error}
+                        </motion.p>
+                    )}
                 </div>
 
-                <button
-                    type="submit"
-                    className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 transition-all active:scale-[0.98] text-lg"
+                <motion.form 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    onSubmit={handleLogin} 
+                    className="bg-[var(--header-bg)] p-10 rounded-[2.5rem] shadow-2xl border border-[var(--border-main)] space-y-8 backdrop-blur-xl relative overflow-hidden group"
                 >
-                    Access Portal
-                </button>
-            </form>
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    
+                    <div className="relative z-10 space-y-6">
+                        <div>
+                            <label className="block text-[10px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] mb-3 ml-1">Identity (Email)</label>
+                            <input
+                                type="email"
+                                required
+                                disabled={isSubmitting}
+                                className="w-full px-6 py-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] font-bold focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 outline-none transition-all placeholder:opacity-20 italic"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="operative@elite-circuit.net"
+                            />
+                        </div>
+                        <div>
+                            <div className="flex justify-between items-center mb-3 px-1">
+                                <label className="block text-[10px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em]">Access Code</label>
+                                <Link to="#" className="text-[9px] font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest">Recovery?</Link>
+                            </div>
+                            <input
+                                type="password"
+                                required
+                                disabled={isSubmitting}
+                                className="w-full px-6 py-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] font-bold focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 outline-none transition-all placeholder:opacity-20 italic"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••••••"
+                            />
+                        </div>
 
-            <div className="text-center mt-8">
-                <p className="text-slate-500">
-                    Don't have an account? <Link to="/register" className="text-blue-600 font-bold hover:underline">Sign Up</Link>
-                </p>
-            </div>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full py-5 rounded-2xl bg-blue-600 text-white font-black hover:bg-blue-700 shadow-glow-primary transition-all active:scale-[0.98] text-xs uppercase tracking-[0.4em] relative overflow-hidden group/btn disabled:opacity-50"
+                        >
+                            <span className="relative z-10">{isSubmitting ? 'Verifying...' : 'Authorize Login'}</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                        </button>
+                    </div>
+                </motion.form>
 
-            <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <p className="text-center text-xs text-slate-500 font-medium">
-                    💡 Demo Tip: Use <strong>admin@race.com</strong> for Admin, <strong>partner@race.com</strong> for Partner.
-                </p>
-            </div>
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-center mt-10"
+                >
+                    <p className="text-[var(--text-main)] opacity-40 text-xs font-bold uppercase tracking-widest italic">
+                        New Operative? <Link to="/register" className="text-blue-600 font-black hover:text-blue-500 transition-colors ml-2">Initialize Profile</Link>
+                    </p>
+                </motion.div>
+
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="mt-10 p-6 bg-[var(--header-bg)] rounded-2xl border border-[var(--border-main)] backdrop-blur-md"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center border border-blue-500/20 shrink-0">
+                            <span className="text-blue-500 text-xs text-center">💡</span>
+                        </div>
+                        <p className="text-[10px] text-[var(--text-main)] opacity-60 font-medium leading-relaxed italic">
+                            <strong className="text-blue-600 uppercase mr-1">Intelligence:</strong> Use <span className="font-bold">admin@race.com</span> for Elite Admin level access.
+                        </p>
+                    </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 }
