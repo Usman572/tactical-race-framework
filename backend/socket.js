@@ -24,7 +24,14 @@ const init = (server) => {
         socket.on('join_race_chat', (raceId) => {
             if (raceId) {
                 socket.join(`race_${raceId}`);
-                console.log(`Socket ${socket.id} joined race chat: ${raceId}`);
+                console.log(`Socket ${socket.id} joined race context: ${raceId}`);
+            }
+        });
+
+        socket.on('join_live_hud', (raceId) => {
+            if (raceId) {
+                socket.join(`race_${raceId}`);
+                console.log(`Socket ${socket.id} established HUD link for race: ${raceId}`);
             }
         });
 

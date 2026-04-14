@@ -477,7 +477,7 @@ const startCountdown = async (req, res) => {
 
         const startTime = new Date(Date.now() + 10000); // 10 seconds from now
         race.startTime = startTime;
-        race.status = 'Active';
+        // We keep it 'Active' during countdown, then transition to 'Live' on engagement
         await race.save();
 
         // Emit countdown start
@@ -487,6 +487,107 @@ const startCountdown = async (req, res) => {
         } catch (err) {}
 
         res.json(race);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const updateTelemetry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { progress, speed, lap, status, userId: targetUserId } = req.body;
+        
+        const race = await Race.findById(id);
+        if (!race) return res.status(404).json({ message: 'Race not found' });
+
+        // Authorization: A user can update their own telemetry. 
+        // A creator/admin can update anyone's (for simulation/correction).
+        const isCreator = race.createdBy?.toString() === req.user._id.toString() || req.user.role === 'admin';
+        const userId = (isCreator && targetUserId) ? targetUserId : req.user._id;
+
+        // Ensure race is live or starting
+        if (race.status !== 'Live' && race.status !== 'Active') {
+            return res.status(400).json({ message: 'Race is not currently engaged' });
+        }
+
+        // Find or initialize telemetry entry for this user
+        let userTelemIndex = race.telemetry.findIndex(t => t.user.toString() === userId.toString());
+        
+        const updateData = {
+            user: userId,
+            progress: progress !== undefined ? progress : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].progress : 0),
+            speed: speed !== undefined ? speed : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].speed : 0),
+            lap: lap !== undefined ? lap : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].lap : 1),
+            status: status || (userTelemIndex > -1 ? race.telemetry[userTelemIndex].status : 'En Route'),
+            lastUpdated: Date.now()
+        };
+
+        if (userTelemIndex > -1) {
+            race.telemetry[userTelemIndex] = updateData;
+        } else {
+            race.telemetry.push(updateData);
+        }
+
+        // Optimize: Don't await save if we are just broadcasting, but we need persistence for HUD reloads
+        await race.save();
+
+        // Broadcast pulse
+        try {
+            const io = socketManager.getIO();
+            io.to(`race_${id}`).emit('telemetry_pulse', {
+                raceId: id,
+                userId,
+                telemetry: updateData
+            });
+        } catch (err) {}
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('updateTelemetry error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const handleRaceCommand = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { command, payload } = req.body;
+
+        const race = await Race.findById(id);
+        if (!race) return res.status(404).json({ message: 'Race not found' });
+
+        // Authorization
+        if (race.createdBy?.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        let updatedStatus = race.status;
+
+        if (command === 'ENGAGE') {
+            updatedStatus = 'Live';
+            race.status = 'Live';
+            if (!race.startTime) race.startTime = new Date();
+        } else if (command === 'ABORT') {
+            updatedStatus = 'Cancelled';
+            race.status = 'Cancelled';
+        } else if (command === 'PAUSE') {
+            // We can add a 'Paused' state if needed, for now just broadcast
+        }
+
+        await race.save();
+
+        // Broadcast command
+        try {
+            const io = socketManager.getIO();
+            io.to(`race_${id}`).emit('command_pulse', {
+                raceId: id,
+                command,
+                payload,
+                status: updatedStatus
+            });
+        } catch (err) {}
+
+        res.json({ success: true, status: updatedStatus });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -587,5 +688,7 @@ module.exports = {
     getMyRequests,
     checkIn,
     startCountdown,
-    completeRace
+    completeRace,
+    updateTelemetry,
+    handleRaceCommand
 };

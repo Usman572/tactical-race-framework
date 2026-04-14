@@ -16,7 +16,9 @@ const {
     getMyRequests,
     checkIn,
     startCountdown,
-    completeRace
+    completeRace,
+    updateTelemetry,
+    handleRaceCommand
 } = require('../controllers/raceController');
 const { protect } = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
@@ -79,5 +81,7 @@ router.patch('/requests/:id/reject', protect, rejectJoinRequest);
 router.post('/:id/checkin', protect, checkIn);
 router.post('/:id/start-countdown', protect, startCountdown);
 router.post('/:id/complete', protect, completeRace);
+router.post('/:id/telemetry', protect, updateTelemetry);
+router.post('/:id/command', protect, handleRaceCommand);
 
 module.exports = router;
