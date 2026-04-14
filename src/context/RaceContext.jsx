@@ -56,6 +56,26 @@ export function RaceProvider({ children }) {
                 setRaces(prev => prev.map(r => r._id === updatedRace._id ? updatedRace : r));
             });
 
+            socket.on('telemetry_pulse', ({ raceId, userId, telemetry }) => {
+                setRaces(prev => prev.map(r => {
+                    if (r._id !== raceId) return r;
+                    const existingTelem = r.telemetry || [];
+                    const index = existingTelem.findIndex(t => (t.user?._id || t.user) === userId);
+                    let newTelem;
+                    if (index > -1) {
+                        newTelem = [...existingTelem];
+                        newTelem[index] = { ...newTelem[index], ...telemetry };
+                    } else {
+                        newTelem = [...existingTelem, telemetry];
+                    }
+                    return { ...r, telemetry: newTelem };
+                }));
+            });
+
+            socket.on('command_pulse', ({ raceId, command, status }) => {
+                setRaces(prev => prev.map(r => r._id === raceId ? { ...r, status } : r));
+            });
+
             return () => {
                 socket.off('new_notification', handleNotification);
                 socket.off('race_created');
@@ -63,6 +83,8 @@ export function RaceProvider({ children }) {
                 socket.off('race_deleted');
                 socket.off('race_countdown_start');
                 socket.off('race_completed');
+                socket.off('telemetry_pulse');
+                socket.off('command_pulse');
             };
         }
     }, [socket, user]);
@@ -348,6 +370,38 @@ export function RaceProvider({ children }) {
         }
     };
 
+    const sendTelemetryPulse = async (id, telemetryData) => {
+        try {
+            const response = await measureFetch(`${API_BASE_URL}/api/races/${id}/telemetry`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user?.token}`
+                },
+                body: JSON.stringify(telemetryData)
+            });
+            return { success: response.ok };
+        } catch (error) {
+            return { success: false };
+        }
+    };
+
+    const sendRaceCommand = async (id, command, payload = {}) => {
+        try {
+            const response = await measureFetch(`${API_BASE_URL}/api/races/${id}/command`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user?.token}`
+                },
+                body: JSON.stringify({ command, payload })
+            });
+            return { success: response.ok };
+        } catch (error) {
+            return { success: false };
+        }
+    };
+
     const filteredRaces = useMemo(() => {
         return races.filter(race => {
             const matchesSector = filters.sectors.length === 0 || filters.sectors.includes(race.sector);
@@ -364,7 +418,7 @@ export function RaceProvider({ children }) {
             races, filteredRaces, filters, setFilters, fetchRaces, getRaceById, addRace, updateRace, deleteRace, joinRace, leaveRace, isLoading,
             pendingRequests, fetchPendingRequests, myRequests, fetchMyRequests, requestToJoin, approveRequest, rejectRequest,
             unreadCount, fetchUnreadCount,
-            checkIn, startCountdown, completeRace
+            checkIn, startCountdown, completeRace, sendTelemetryPulse, sendRaceCommand
         }}>
             {children}
         </RaceContext.Provider>
