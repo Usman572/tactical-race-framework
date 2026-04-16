@@ -7,11 +7,13 @@ const calculateLevel = (xp) => {
     return Math.floor(Math.sqrt(xp / 500)) + 1;
 };
 
-const awardXP = async (user, amount, reason) => {
+const awardXP = async (user, amount, reason, sectorName = null) => {
     if (!user) return;
 
-    // Check for active Global XP Boosts
+    // Check for multipliers
     let multiplier = 1;
+    
+    // 1. Global XP Boosts
     try {
         const GlobalEvent = require('../models/GlobalEvent');
         const activeBoosts = await GlobalEvent.find({
@@ -26,6 +28,19 @@ const awardXP = async (user, amount, reason) => {
         }
     } catch (err) {
         console.error('Multiplier check failed', err);
+    }
+
+    // 2. Faction Territory Perk (15% Bonus)
+    if (sectorName && user.faction && user.faction !== 'None') {
+        try {
+            const SectorOwnership = require('../models/SectorOwnership');
+            const sector = await SectorOwnership.findOne({ sectorName });
+            if (sector && sector.currentOwner === user.faction) {
+                multiplier *= 1.15;
+            }
+        } catch (err) {
+            console.error('Faction perk check failed', err);
+        }
     }
 
     const finalAmount = Math.round(amount * multiplier);

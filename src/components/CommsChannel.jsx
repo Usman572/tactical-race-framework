@@ -96,19 +96,40 @@ const CommsChannel = ({ raceId, isLiveHUD = false }) => {
                             </button>
                         </div>
 
-                        {/* Messages */}
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-900/20">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-900/40">
                             {messages.map((msg, i) => {
                                 const isMe = (msg.user?._id || msg.user) === user.id;
+                                const isTactical = msg.messageType === 'Tactical';
+
                                 return (
-                                    <div key={msg._id || i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                        <div className={`max-w-[85%] p-3 rounded-2xl text-xs font-medium ${isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none border border-white/5'}`}>
-                                            {!isMe && <p className="text-[9px] font-black text-blue-400 mb-1 uppercase tracking-widest">{msg.user?.name}</p>}
-                                            <p>{msg.text}</p>
-                                        </div>
-                                        <span className="text-[8px] font-bold text-slate-500 uppercase mt-1 px-1">
-                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
+                                    <div key={msg._id || i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isTactical ? 'w-full !items-center my-6' : ''}`}>
+                                        {isTactical ? (
+                                            <div className="w-full bg-blue-600/10 border-y border-blue-500/30 p-4 relative overflow-hidden flex flex-col items-center gap-2 group/tactical shadow-[inset_0_0_20px_rgba(37,99,235,0.1)]">
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 shadow-glow-primary"></div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></div>
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500">Mission Intel_Broadcast</span>
+                                                </div>
+                                                <p className="text-sm font-black italic text-white text-center leading-relaxed tracking-tight underline decoration-blue-500/30 decoration-2 underline-offset-4">
+                                                    "{msg.text}"
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{msg.user?.name || 'ADMIN'}</span>
+                                                    <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className={`max-w-[85%] p-3 rounded-2xl text-xs font-medium ${isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none border border-white/5'}`}>
+                                                    {!isMe && <p className="text-[9px] font-black text-blue-400 mb-1 uppercase tracking-widest">{msg.user?.name}</p>}
+                                                    <p>{msg.text}</p>
+                                                </div>
+                                                <span className="text-[8px] font-bold text-slate-500 uppercase mt-1 px-1">
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                 );
                             })}

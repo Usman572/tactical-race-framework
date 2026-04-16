@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 // Fix for default Leaflet markers in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,31 +15,46 @@ L.Icon.Default.mergeOptions({
 
 // Sector Themes
 const sectorThemes = {
-    'Neon District': { color: '#00f3fe', glow: 'rgba(0,243,254,0.8)', icon: '🟦' },
-    'Outlands': { color: '#ffb300', glow: 'rgba(255,179,0,0.8)', icon: '🟧' },
-    'The Void': { color: '#d300ff', glow: 'rgba(211,0,255,0.8)', icon: '🟪' },
-    'Cyber City': { color: '#ff0055', glow: 'rgba(255,0,85,0.8)', icon: '🎴' },
-    'Industrial Zone': { color: '#00ff66', glow: 'rgba(0,255,102,0.8)', icon: '🟩' }
+    'Neon District': { color: '#00f3fe', glow: 'rgba(0,243,254,0.8)', icon: '🟦', baseColor: '#00f3fe' },
+    'Outlands': { color: '#ffb300', glow: 'rgba(255,179,0,0.8)', icon: '🟧', baseColor: '#ffb300' },
+    'The Void': { color: '#d300ff', glow: 'rgba(211,0,255,0.8)', icon: '🟪', baseColor: '#d300ff' },
+    'Cyber City': { color: '#ff0055', glow: 'rgba(255,0,85,0.8)', icon: '🎴', baseColor: '#ff0055' },
+    'Industrial Zone': { color: '#00ff66', glow: 'rgba(0,255,102,0.8)', icon: '🟩', baseColor: '#00ff66' }
 };
 
-const getSectorIcon = (sector, isDimmed) => {
+const factionColors = {
+    'Cyber Shadows': '#9333ea', // Purple-600
+    'The Vanguard': '#2563eb', // Blue-600
+    'Neon Pulse': '#16a34a',   // Green-600
+    'Void Runners': '#dc2626',  // Red-600
+    'None': 'transparent'
+};
+
+const getSectorIcon = (sector, isDimmed, ownerFaction) => {
     const theme = sectorThemes[sector] || sectorThemes['Neon District'];
+    const factionColor = factionColors[ownerFaction] || theme.color;
+    const hasOwner = ownerFaction && ownerFaction !== 'None';
+    
     const opacity = isDimmed ? 'opacity-20 grayscale saturate-0 scale-50' : 'opacity-100 scale-100 hover:scale-125';
     const animation = isDimmed ? '' : 'animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]';
     
     return new L.DivIcon({
         className: 'custom-sector-marker bg-transparent',
         html: `<div class="w-12 h-12 flex items-center justify-center relative transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${opacity}">
+                 <!-- Faction Ownership Ring -->
+                 ${hasOwner ? 
+                   `<div class="absolute -inset-6 rounded-full border-2 border-dashed animate-[spin_15s_linear_infinite] opacity-60 shadow-[0_0_30px_${factionColor}]" style="border-color: ${factionColor}"></div>` : ''}
+
                  <!-- Massive outer pulse -->
-                 <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl ${animation}" style="background-color: ${theme.color}"></div>
+                 <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl ${animation}" style="background-color: ${hasOwner ? factionColor : theme.color}"></div>
                  
                  <!-- Inner aggressive ring -->
-                 <div class="absolute inset-2 rounded-full border border-white/40 animate-[spin_4s_linear_infinite]" style="border-top-color: ${theme.color};"></div>
+                 <div class="absolute inset-2 rounded-full border-2 border-white/60 animate-[spin_4s_linear_infinite]" style="border-top-color: ${hasOwner ? factionColor : theme.color};"></div>
                  
                  <!-- Core Marker Base -->
-                 <div class="w-8 h-8 rounded-full border-[3px] border-white backdrop-blur-sm flex items-center justify-center relative z-10 overflow-hidden group-hover:scale-110 transition-transform duration-300" style="background-color: ${theme.color}; box-shadow: 0 0 40px ${theme.glow}, inset 0 0 10px rgba(255,255,255,0.8)">
+                 <div class="w-9 h-9 rounded-full border-[3px] border-white backdrop-blur-md flex items-center justify-center relative z-10 overflow-hidden group-hover:scale-110 transition-transform duration-300" style="background-color: ${hasOwner ? factionColor : theme.color}; box-shadow: 0 0 50px ${hasOwner ? factionColor : theme.glow}, inset 0 0 15px rgba(255,255,255,0.9)">
                    <!-- Center Diamond Target -->
-                   <div class="w-2.5 h-2.5 bg-white shadow-[0_0_15px_white] animate-pulse" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
+                   <div class="w-3 h-3 bg-white shadow-[0_0_20px_white] animate-pulse" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
                  </div>
                </div>`,
         iconSize: [48, 48],
@@ -101,6 +117,22 @@ export default function RaceMap({ races = [] }) {
     const center = [20, 0];
     const [selectedSector, setSelectedSector] = useState('ALL');
     const [stats, setStats] = useState({ active: 0, total: races.length });
+    const [territories, setTerritories] = useState([]);
+
+    useEffect(() => {
+        const fetchTerritories = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/factions/territories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setTerritories(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch territories", err);
+            }
+        };
+        fetchTerritories();
+    }, []);
 
     useEffect(() => {
         const filtered = selectedSector === 'ALL' ? races : races.filter(r => r.sector === selectedSector);
@@ -130,9 +162,11 @@ export default function RaceMap({ races = [] }) {
                     const position = generateMockCoords(race._id, race.sector);
                     const theme = sectorThemes[race.sector] || sectorThemes['Neon District'];
                     const isDimmed = selectedSector !== 'ALL' && selectedSector !== race.sector;
+                    const territory = territories.find(t => t.sectorName === race.sector);
+                    const ownerFaction = territory?.currentOwner || 'None';
 
                     return (
-                        <Marker key={race._id} position={position} icon={getSectorIcon(race.sector, isDimmed)} zIndexOffset={isDimmed ? 0 : 1000}>
+                        <Marker key={race._id} position={position} icon={getSectorIcon(race.sector, isDimmed, ownerFaction)} zIndexOffset={isDimmed ? 0 : 1000}>
                             <Popup className="tactical-popup border-none bg-transparent m-0 p-0" closeButton={false}>
                                 <div className="p-0 bg-transparent min-w-[300px] pointer-events-auto">
                                     <div className="relative overflow-hidden bg-slate-950/90 backdrop-blur-2xl border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)' }}>
@@ -140,9 +174,16 @@ export default function RaceMap({ races = [] }) {
                                         {/* Dynamic Header */}
                                         <div className="flex justify-between items-center p-4 border-b border-white/10 relative overflow-hidden group/header">
                                             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/header:opacity-100 transition-opacity"></div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 bg-white/10 text-slate-300 relative z-10" style={{ borderLeft: `3px solid ${theme.color}` }}>
-                                                {race.sector || 'Unassigned'}
-                                            </span>
+                                            <div className="flex flex-col gap-1 relative z-10">
+                                                <span className="text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 bg-white/10 text-slate-300" style={{ borderLeft: `3px solid ${theme.color}` }}>
+                                                    {race.sector || 'Unassigned'}
+                                                </span>
+                                                {ownerFaction !== 'None' && (
+                                                    <span className="text-[8px] font-black uppercase text-white/40 tracking-[0.2em] ml-1">
+                                                        Controlled By: <span style={{ color: factionColors[ownerFaction] }}>{ownerFaction}</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-xl drop-shadow-lg opacity-80">{theme.icon}</span>
                                         </div>
 
@@ -222,12 +263,17 @@ export default function RaceMap({ races = [] }) {
                     
                     <div className="flex items-center justify-between text-white">
                          <div className="flex flex-col">
-                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Targets Found</span>
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Engaged Sectors</span>
                              <span className="text-4xl font-black tracking-tighter text-white" style={{ textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>{stats.total}</span>
                          </div>
                          <div className="h-12 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
+                         <div className="flex flex-col items-center">
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Dominated</span>
+                             <span className="text-4xl font-black tracking-tighter text-[#00f3fe]" style={{ textShadow: '0 0 20px rgba(0,243,254,0.4)' }}>{territories.filter(t => t.currentOwner !== 'None').length}</span>
+                         </div>
+                         <div className="h-12 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
                          <div className="flex flex-col items-end">
-                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Engagements</span>
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Live Drills</span>
                              <span className="text-4xl font-black tracking-tighter text-[#00ff66]" style={{ textShadow: '0 0 20px rgba(0,255,102,0.4)' }}>{stats.active}</span>
                          </div>
                     </div>
@@ -259,20 +305,26 @@ export default function RaceMap({ races = [] }) {
                             {selectedSector === 'ALL' && <div className="w-2 h-2 bg-white rounded-sm animate-pulse shadow-[0_0_10px_white]"></div>}
                         </button>
                         
-                        {Object.keys(sectorThemes).map(sector => (
-                            <button
-                                key={sector}
-                                onClick={() => setSelectedSector(sector)}
-                                className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
-                                style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
-                            >
-                                <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
-                                    <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
-                                </div>
-                                {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
-                                {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
-                            </button>
-                        ))}
+                        {Object.keys(sectorThemes).map(sector => {
+                            const territory = territories.find(t => t.sectorName === sector);
+                            const owner = territory?.currentOwner || 'None';
+                            
+                            return (
+                                <button
+                                    key={sector}
+                                    onClick={() => setSelectedSector(sector)}
+                                    className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
+                                    style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
+                                >
+                                    <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
+                                        <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
+                                        {owner !== 'None' && <span className="text-[7px] bg-white/5 px-1.5 py-0.5 rounded-sm opacity-60" style={{ color: factionColors[owner] }}>{owner.split(' ')[0]}</span>}
+                                    </div>
+                                    {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
+                                    {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
+                                </button>
+                            );
+                        })}
                     </div>
                 </motion.div>
             </div>

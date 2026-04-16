@@ -18,10 +18,19 @@ const sendRaceMessage = async (req, res) => {
         const { raceId } = req.params;
         const userId = req.user._id;
 
+        const Race = require('../models/Race');
+        const race = await Race.findById(raceId);
+        
+        let messageType = 'Standard';
+        if (race && (race.createdBy?.toString() === userId.toString() || req.user.role === 'admin')) {
+            messageType = 'Tactical';
+        }
+
         const message = await ChatMessage.create({
             race: raceId,
             user: userId,
-            text
+            text,
+            messageType
         });
 
         // Award dynamic XP for signals

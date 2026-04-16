@@ -226,9 +226,13 @@ export default function RaceDetails() {
                                     </motion.div>
                                 )}
 
-                                {race.linkedEvent && (
+                                {race.sector && (
                                     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                                        <FactionDominance participants={race.participants} />
+                                        <FactionDominance 
+                                            participants={race.participants} 
+                                            sectorName={race.sector} 
+                                            userFaction={user?.faction} 
+                                        />
                                     </motion.div>
                                 )}
 
