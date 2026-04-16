@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 // Fix for default Leaflet markers in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,21 +15,35 @@ L.Icon.Default.mergeOptions({
 
 // Sector Themes
 const sectorThemes = {
-    'Neon District': { color: '#00f3fe', glow: 'rgba(0,243,254,0.8)', icon: '🟦' },
-    'Outlands': { color: '#ffb300', glow: 'rgba(255,179,0,0.8)', icon: '🟧' },
-    'The Void': { color: '#d300ff', glow: 'rgba(211,0,255,0.8)', icon: '🟪' },
-    'Cyber City': { color: '#ff0055', glow: 'rgba(255,0,85,0.8)', icon: '🎴' },
-    'Industrial Zone': { color: '#00ff66', glow: 'rgba(0,255,102,0.8)', icon: '🟩' }
+    'Neon District': { color: '#00f3fe', glow: 'rgba(0,243,254,0.8)', icon: '🟦', baseColor: '#00f3fe' },
+    'Outlands': { color: '#ffb300', glow: 'rgba(255,179,0,0.8)', icon: '🟧', baseColor: '#ffb300' },
+    'The Void': { color: '#d300ff', glow: 'rgba(211,0,255,0.8)', icon: '🟪', baseColor: '#d300ff' },
+    'Cyber City': { color: '#ff0055', glow: 'rgba(255,0,85,0.8)', icon: '🎴', baseColor: '#ff0055' },
+    'Industrial Zone': { color: '#00ff66', glow: 'rgba(0,255,102,0.8)', icon: '🟩', baseColor: '#00ff66' }
 };
 
-const getSectorIcon = (sector, isDimmed) => {
+const factionColors = {
+    'Cyber Shadows': '#9333ea', // Purple-600
+    'The Vanguard': '#2563eb', // Blue-600
+    'Neon Pulse': '#16a34a',   // Green-600
+    'Void Runners': '#dc2626',  // Red-600
+    'None': 'transparent'
+};
+
+const getSectorIcon = (sector, isDimmed, ownerFaction) => {
     const theme = sectorThemes[sector] || sectorThemes['Neon District'];
+    const factionColor = factionColors[ownerFaction] || theme.color;
+    
     const opacity = isDimmed ? 'opacity-20 grayscale saturate-0 scale-50' : 'opacity-100 scale-100 hover:scale-125';
     const animation = isDimmed ? '' : 'animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]';
     
     return new L.DivIcon({
         className: 'custom-sector-marker bg-transparent',
         html: `<div class="w-12 h-12 flex items-center justify-center relative transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${opacity}">
+                 <!-- Faction Ownership Ring -->
+                 ${ownerFaction && ownerFaction !== 'None' ? 
+                   `<div class="absolute -inset-4 rounded-full border-4 border-dashed animate-[spin_10s_linear_infinite] opacity-40 shadow-[0_0_20px_${factionColor}]" style="border-color: ${factionColor}"></div>` : ''}
+
                  <!-- Massive outer pulse -->
                  <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl ${animation}" style="background-color: ${theme.color}"></div>
                  
@@ -101,6 +116,22 @@ export default function RaceMap({ races = [] }) {
     const center = [20, 0];
     const [selectedSector, setSelectedSector] = useState('ALL');
     const [stats, setStats] = useState({ active: 0, total: races.length });
+    const [territories, setTerritories] = useState([]);
+
+    useEffect(() => {
+        const fetchTerritories = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/factions/territories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setTerritories(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch territories", err);
+            }
+        };
+        fetchTerritories();
+    }, []);
 
     useEffect(() => {
         const filtered = selectedSector === 'ALL' ? races : races.filter(r => r.sector === selectedSector);
@@ -130,9 +161,11 @@ export default function RaceMap({ races = [] }) {
                     const position = generateMockCoords(race._id, race.sector);
                     const theme = sectorThemes[race.sector] || sectorThemes['Neon District'];
                     const isDimmed = selectedSector !== 'ALL' && selectedSector !== race.sector;
+                    const territory = territories.find(t => t.sectorName === race.sector);
+                    const ownerFaction = territory?.currentOwner || 'None';
 
                     return (
-                        <Marker key={race._id} position={position} icon={getSectorIcon(race.sector, isDimmed)} zIndexOffset={isDimmed ? 0 : 1000}>
+                        <Marker key={race._id} position={position} icon={getSectorIcon(race.sector, isDimmed, ownerFaction)} zIndexOffset={isDimmed ? 0 : 1000}>
                             <Popup className="tactical-popup border-none bg-transparent m-0 p-0" closeButton={false}>
                                 <div className="p-0 bg-transparent min-w-[300px] pointer-events-auto">
                                     <div className="relative overflow-hidden bg-slate-950/90 backdrop-blur-2xl border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)' }}>
@@ -140,9 +173,16 @@ export default function RaceMap({ races = [] }) {
                                         {/* Dynamic Header */}
                                         <div className="flex justify-between items-center p-4 border-b border-white/10 relative overflow-hidden group/header">
                                             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/header:opacity-100 transition-opacity"></div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 bg-white/10 text-slate-300 relative z-10" style={{ borderLeft: `3px solid ${theme.color}` }}>
-                                                {race.sector || 'Unassigned'}
-                                            </span>
+                                            <div className="flex flex-col gap-1 relative z-10">
+                                                <span className="text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 bg-white/10 text-slate-300" style={{ borderLeft: `3px solid ${theme.color}` }}>
+                                                    {race.sector || 'Unassigned'}
+                                                </span>
+                                                {ownerFaction !== 'None' && (
+                                                    <span className="text-[8px] font-black uppercase text-white/40 tracking-[0.2em] ml-1">
+                                                        Controlled By: <span style={{ color: factionColors[ownerFaction] }}>{ownerFaction}</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-xl drop-shadow-lg opacity-80">{theme.icon}</span>
                                         </div>
 

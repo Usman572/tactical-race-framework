@@ -89,6 +89,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/partner', require('./routes/partnerRoutes'));
+app.use('/api/factions', require('./routes/factionRoutes'));
 app.use('/api/missions', require('./routes/missionRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));

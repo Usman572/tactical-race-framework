@@ -2,6 +2,7 @@ const Race = require('../models/Race.js');
 const User = require('../models/User.js');
 const Notification = require('../models/Notification.js');
 const JoinRequest = require('../models/JoinRequest.js');
+const SectorOwnership = require('../models/SectorOwnership.js');
 const socketManager = require('../socket');
 
 const getRaceById = async (req, res) => {
@@ -606,6 +607,59 @@ const completeRace = async (req, res) => {
         race.status = 'Completed';
         race.winners = winners;
         await race.save();
+
+        // 🏆 SECTOR DOMINANCE LOGIC
+        if (race.sector && race.sector !== 'Unassigned') {
+            try {
+                let sector = await SectorOwnership.findOne({ sectorName: race.sector });
+                if (!sector) {
+                    sector = await SectorOwnership.create({
+                        sectorName: race.sector,
+                        ownership: [
+                            { faction: 'Cyber Shadows', points: 0 },
+                            { faction: 'The Vanguard', points: 0 },
+                            { faction: 'Neon Pulse', points: 0 },
+                            { faction: 'Void Runners', points: 0 }
+                        ]
+                    });
+                }
+
+                // Award points based on winner factions
+                for (const w of winners) {
+                    const winnerUser = await User.findById(w.user);
+                    if (winnerUser && winnerUser.faction && winnerUser.faction !== 'None') {
+                        const pointsGained = w.position === 1 ? 50 : w.position === 2 ? 25 : 10;
+                        const factionEntry = sector.ownership.find(o => o.faction === winnerUser.faction);
+                        if (factionEntry) {
+                            factionEntry.points += pointsGained;
+                        }
+                    }
+                }
+
+                // Update owner
+                const prevOwner = sector.currentOwner;
+                const topFaction = [...sector.ownership].sort((a, b) => b.points - a.points)[0];
+                if (topFaction && topFaction.points > 0) {
+                    sector.currentOwner = topFaction.faction;
+                }
+                sector.lastBattleAt = Date.now();
+                await sector.save();
+
+                // Global Broadcast of Territory Shift
+                try {
+                    const io = socketManager.getIO();
+                    io.emit('territory_update', {
+                        sector: sector.sectorName,
+                        owner: sector.currentOwner,
+                        points: sector.ownership,
+                        takeover: prevOwner !== sector.currentOwner
+                    });
+                } catch (err) {}
+
+            } catch (err) {
+                console.error('Sector Dominance error:', err);
+            }
+        }
 
         // Award XP to winners
         const { awardXP } = require('../utils/gamification');
