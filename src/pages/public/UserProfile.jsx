@@ -139,6 +139,39 @@ export default function UserProfile() {
             callback: (choice) => {
                 if (choice === 'system') {
                     fileInputRef.current.click();
+                } else if (choice === 'avatar') {
+                    showModal({
+                        type: 'avatar',
+                        title: 'Select Avatar',
+                        message: 'Choose a cinematic portrait representing your faction allegiance.',
+                        callback: async (avatarPath) => {
+                            if (!avatarPath) return;
+                            const fullUrl = `${API_BASE_URL}/uploads/avatars/${avatarPath}.png`;
+                            try {
+                                const res = await fetch(`${API_BASE_URL}/api/users/${profileUser._id}`, {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${currentUser?.token}`
+                                    },
+                                    body: JSON.stringify({ profilePicture: fullUrl })
+                                });
+
+                                if (res.ok) {
+                                    const updatedUser = await res.json();
+                                    const formattedUser = { ...updatedUser, id: updatedUser.id || updatedUser._id };
+                                    setProfileUser(formattedUser);
+                                    if (currentUser?.id === formattedUser.id) {
+                                        updateUser(formattedUser);
+                                    }
+                                    showModal({ title: 'New Identity Authenticated', message: 'Your faction avatar has been updated.' });
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                showModal({ title: 'Error', message: 'Failed to update avatar.' });
+                            }
+                        }
+                    });
                 } else if (choice === 'url') {
                     showModal({
                         type: 'url',
@@ -159,9 +192,10 @@ export default function UserProfile() {
 
                                 if (res.ok) {
                                     const updatedUser = await res.json();
-                                    setProfileUser(updatedUser);
-                                    if (currentUser?.id === updatedUser._id) {
-                                        updateUser(updatedUser);
+                                    const formattedUser = { ...updatedUser, id: updatedUser.id || updatedUser._id };
+                                    setProfileUser(formattedUser);
+                                    if (currentUser?.id === formattedUser.id) {
+                                        updateUser(formattedUser);
                                     }
                                     showModal({ title: 'All set!', message: 'Your profile picture has been updated.' });
                                 } else {
@@ -197,9 +231,10 @@ export default function UserProfile() {
 
                     if (res.ok) {
                         const updatedUser = await res.json();
-                        setProfileUser(updatedUser);
-                        if (currentUser?.id === updatedUser._id) {
-                            updateUser(updatedUser);
+                        const formattedUser = { ...updatedUser, id: updatedUser.id || updatedUser._id };
+                        setProfileUser(formattedUser);
+                        if (currentUser?.id === formattedUser.id) {
+                            updateUser(formattedUser);
                         }
                         showModal({ title: 'Welcome Operative', message: `You have successfully joined the ${faction} syndicate.` });
                     }
@@ -228,14 +263,15 @@ export default function UserProfile() {
 
             if (res.ok) {
                 const updatedUser = await res.json();
-                setProfileUser(updatedUser);
-                if (currentUser?.id === updatedUser._id) {
-                    updateUser(updatedUser);
+                const formattedUser = { ...updatedUser, id: updatedUser.id || updatedUser._id };
+                setProfileUser(formattedUser);
+                if (currentUser?.id === formattedUser.id) {
+                    updateUser(formattedUser);
                 }
                 showModal({ title: 'Success!', message: 'Your photo was uploaded successfully!' });
             } else {
-                const data = await res.json();
-                showModal({ title: 'Upload Failed', message: data.message || "Could not upload photo." });
+                const data = await res.json().catch(() => ({ message: "Could not upload photo." }));
+                showModal({ title: 'Upload Failed', message: data.message || "The server rejected the upload. Please check file format." });
             }
         } catch (err) {
             console.error(err);
@@ -453,6 +489,7 @@ export default function UserProfile() {
                             ) : (
                                 <>
                                     <button onClick={() => { closeModal(); modal.callback('system'); }} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-glow-primary active:scale-95 flex items-center justify-center gap-2">📁 System Storage</button>
+                                    <button onClick={() => { closeModal(); modal.callback('avatar'); }} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all shadow-glow-primary active:scale-95 flex items-center justify-center gap-2">⚡ Select Avatar</button>
                                     <button onClick={() => { closeModal(); modal.callback('url'); }} className="w-full py-4 bg-[var(--bg-main)] text-[var(--text-main)] rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-[var(--glass-bg)] transition-all active:scale-95 border border-[var(--border-main)] flex items-center justify-center gap-2">🔗 External Link</button>
                                 </>
                             )}
@@ -489,6 +526,32 @@ export default function UserProfile() {
                             className="w-full p-4 rounded-2xl border-2 border-[var(--border-main)] bg-[var(--bg-main)] focus:border-blue-500 focus:ring-0 transition-all text-[var(--text-main)] placeholder:opacity-20 font-mono text-xs"
                             placeholder="https://quantum-net.tech/static/img/id.png"
                         />
+                    </div>
+                ) : modal.type === 'avatar' ? (
+                    <div className="grid grid-cols-2 gap-4">
+                        {[
+                            { id: 'cyber_shadows', name: 'Cyber Shadow', color: 'text-purple-500' },
+                            { id: 'vanguard', name: 'The Vanguard', color: 'text-blue-500' },
+                            { id: 'neon_pulse', name: 'Neon Pulse', color: 'text-green-500' },
+                            { id: 'void_runners', name: 'Void Runner', color: 'text-red-500' }
+                        ].map(av => (
+                            <button
+                                key={av.id}
+                                onClick={() => { closeModal(); modal.callback(av.id); }}
+                                className="group relative aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-white/40 transition-all active:scale-95"
+                            >
+                                <img 
+                                    src={`${API_BASE_URL}/uploads/avatars/${av.id}.png`} 
+                                    alt={av.name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                />
+                                <div className="absolute inset-x-0 bottom-0 p-3 bg-black/60 backdrop-blur-md">
+                                    <span className={`text-[8px] font-black uppercase tracking-widest ${av.color}`}>
+                                        {av.name}
+                                    </span>
+                                </div>
+                            </button>
+                        ))}
                     </div>
                 ) : null}
             </Modal>

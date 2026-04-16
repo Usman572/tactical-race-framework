@@ -112,8 +112,10 @@ const uploadProfilePicture = async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 5005}`;
+        const appUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 5005}`).replace(/\/$/, '');
         const profilePictureUrl = `${appUrl}/uploads/profiles/${req.file.filename}`;
+        
+        console.log(`Backend: Profile picture uploaded to ${profilePictureUrl}`);
 
         const user = await User.findByIdAndUpdate(
             req.user.id,
@@ -123,8 +125,8 @@ const uploadProfilePicture = async (req, res) => {
 
         res.json(user);
     } catch (err) {
-        console.error('uploadProfilePicture error:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('uploadProfilePicture error details:', err.message, err.stack);
+        res.status(500).json({ message: 'Server error during upload' });
     }
 };
 
