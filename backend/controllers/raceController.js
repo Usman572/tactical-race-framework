@@ -624,7 +624,7 @@ const completeRace = async (req, res) => {
                     });
                 }
 
-                // Award points based on winner factions
+                // Award points and track wins based on winner factions
                 for (const w of winners) {
                     const winnerUser = await User.findById(w.user);
                     if (winnerUser && winnerUser.faction && winnerUser.faction !== 'None') {
@@ -632,15 +632,32 @@ const completeRace = async (req, res) => {
                         const factionEntry = sector.ownership.find(o => o.faction === winnerUser.faction);
                         if (factionEntry) {
                             factionEntry.points += pointsGained;
+                            if (w.position === 1) factionEntry.wins += 1;
                         }
                     }
                 }
 
-                // Update owner
+                // Increment participations for all participants' factions
+                const participants = await User.find({ _id: { $in: race.participants } });
+                for (const p of participants) {
+                    if (p.faction && p.faction !== 'None') {
+                        const factionEntry = sector.ownership.find(o => o.faction === p.faction);
+                        if (factionEntry) {
+                            factionEntry.participations += 1;
+                        }
+                    }
+                }
+
+                // Update owner based on Win-Rate (Weighted Points / Participations)
                 const prevOwner = sector.currentOwner;
-                const topFaction = [...sector.ownership].sort((a, b) => b.points - a.points)[0];
-                if (topFaction && topFaction.points > 0) {
-                    sector.currentOwner = topFaction.faction;
+                // We use a blend of points and participations to determine dominance
+                const rankings = [...sector.ownership].map(f => ({
+                    faction: f.faction,
+                    rate: f.participations > 0 ? (f.points / f.participations) : 0
+                })).sort((a, b) => b.rate - a.rate);
+
+                if (rankings[0] && rankings[0].rate > 0) {
+                    sector.currentOwner = rankings[0].faction;
                 }
                 sector.lastBattleAt = Date.now();
                 await sector.save();
@@ -668,7 +685,7 @@ const completeRace = async (req, res) => {
             if (user) {
                 const xpGain = w.position === 1 ? 250 : w.position === 2 ? 150 : 100;
                 if (w.position === 1) user.stats.wins += 1;
-                await awardXP(user, xpGain, `Race Result: ${w.position === 1 ? 'Podium' : 'Completion'}`);
+                await awardXP(user, xpGain, `Race Result: ${w.position === 1 ? 'Podium' : 'Completion'}`, race.sector);
                 
                 const { updateMissionProgress } = require('./missionController');
                 if (w.position <= 3) await updateMissionProgress(user._id, 'win');

@@ -33,6 +33,7 @@ const factionColors = {
 const getSectorIcon = (sector, isDimmed, ownerFaction) => {
     const theme = sectorThemes[sector] || sectorThemes['Neon District'];
     const factionColor = factionColors[ownerFaction] || theme.color;
+    const hasOwner = ownerFaction && ownerFaction !== 'None';
     
     const opacity = isDimmed ? 'opacity-20 grayscale saturate-0 scale-50' : 'opacity-100 scale-100 hover:scale-125';
     const animation = isDimmed ? '' : 'animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]';
@@ -41,19 +42,19 @@ const getSectorIcon = (sector, isDimmed, ownerFaction) => {
         className: 'custom-sector-marker bg-transparent',
         html: `<div class="w-12 h-12 flex items-center justify-center relative transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${opacity}">
                  <!-- Faction Ownership Ring -->
-                 ${ownerFaction && ownerFaction !== 'None' ? 
-                   `<div class="absolute -inset-4 rounded-full border-4 border-dashed animate-[spin_10s_linear_infinite] opacity-40 shadow-[0_0_20px_${factionColor}]" style="border-color: ${factionColor}"></div>` : ''}
+                 ${hasOwner ? 
+                   `<div class="absolute -inset-6 rounded-full border-2 border-dashed animate-[spin_15s_linear_infinite] opacity-60 shadow-[0_0_30px_${factionColor}]" style="border-color: ${factionColor}"></div>` : ''}
 
                  <!-- Massive outer pulse -->
-                 <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl ${animation}" style="background-color: ${theme.color}"></div>
+                 <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl ${animation}" style="background-color: ${hasOwner ? factionColor : theme.color}"></div>
                  
                  <!-- Inner aggressive ring -->
-                 <div class="absolute inset-2 rounded-full border border-white/40 animate-[spin_4s_linear_infinite]" style="border-top-color: ${theme.color};"></div>
+                 <div class="absolute inset-2 rounded-full border-2 border-white/60 animate-[spin_4s_linear_infinite]" style="border-top-color: ${hasOwner ? factionColor : theme.color};"></div>
                  
                  <!-- Core Marker Base -->
-                 <div class="w-8 h-8 rounded-full border-[3px] border-white backdrop-blur-sm flex items-center justify-center relative z-10 overflow-hidden group-hover:scale-110 transition-transform duration-300" style="background-color: ${theme.color}; box-shadow: 0 0 40px ${theme.glow}, inset 0 0 10px rgba(255,255,255,0.8)">
+                 <div class="w-9 h-9 rounded-full border-[3px] border-white backdrop-blur-md flex items-center justify-center relative z-10 overflow-hidden group-hover:scale-110 transition-transform duration-300" style="background-color: ${hasOwner ? factionColor : theme.color}; box-shadow: 0 0 50px ${hasOwner ? factionColor : theme.glow}, inset 0 0 15px rgba(255,255,255,0.9)">
                    <!-- Center Diamond Target -->
-                   <div class="w-2.5 h-2.5 bg-white shadow-[0_0_15px_white] animate-pulse" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
+                   <div class="w-3 h-3 bg-white shadow-[0_0_20px_white] animate-pulse" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>
                  </div>
                </div>`,
         iconSize: [48, 48],
@@ -262,12 +263,17 @@ export default function RaceMap({ races = [] }) {
                     
                     <div className="flex items-center justify-between text-white">
                          <div className="flex flex-col">
-                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Targets Found</span>
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Engaged Sectors</span>
                              <span className="text-4xl font-black tracking-tighter text-white" style={{ textShadow: '0 0 20px rgba(255,255,255,0.3)' }}>{stats.total}</span>
                          </div>
                          <div className="h-12 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
+                         <div className="flex flex-col items-center">
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Dominated</span>
+                             <span className="text-4xl font-black tracking-tighter text-[#00f3fe]" style={{ textShadow: '0 0 20px rgba(0,243,254,0.4)' }}>{territories.filter(t => t.currentOwner !== 'None').length}</span>
+                         </div>
+                         <div className="h-12 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
                          <div className="flex flex-col items-end">
-                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Engagements</span>
+                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Live Drills</span>
                              <span className="text-4xl font-black tracking-tighter text-[#00ff66]" style={{ textShadow: '0 0 20px rgba(0,255,102,0.4)' }}>{stats.active}</span>
                          </div>
                     </div>
@@ -299,20 +305,26 @@ export default function RaceMap({ races = [] }) {
                             {selectedSector === 'ALL' && <div className="w-2 h-2 bg-white rounded-sm animate-pulse shadow-[0_0_10px_white]"></div>}
                         </button>
                         
-                        {Object.keys(sectorThemes).map(sector => (
-                            <button
-                                key={sector}
-                                onClick={() => setSelectedSector(sector)}
-                                className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
-                                style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
-                            >
-                                <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
-                                    <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
-                                </div>
-                                {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
-                                {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
-                            </button>
-                        ))}
+                        {Object.keys(sectorThemes).map(sector => {
+                            const territory = territories.find(t => t.sectorName === sector);
+                            const owner = territory?.currentOwner || 'None';
+                            
+                            return (
+                                <button
+                                    key={sector}
+                                    onClick={() => setSelectedSector(sector)}
+                                    className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
+                                    style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
+                                >
+                                    <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
+                                        <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
+                                        {owner !== 'None' && <span className="text-[7px] bg-white/5 px-1.5 py-0.5 rounded-sm opacity-60" style={{ color: factionColors[owner] }}>{owner.split(' ')[0]}</span>}
+                                    </div>
+                                    {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
+                                    {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
+                                </button>
+                            );
+                        })}
                     </div>
                 </motion.div>
             </div>

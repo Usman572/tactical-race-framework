@@ -14,7 +14,9 @@ const sectorOwnershipSchema = mongoose.Schema(
                 enum: ['Cyber Shadows', 'The Vanguard', 'Neon Pulse', 'Void Runners', 'None'],
                 default: 'None'
             },
-            points: { type: Number, default: 0 }
+            points: { type: Number, default: 0 },
+            wins: { type: Number, default: 0 },
+            participations: { type: Number, default: 0 }
         }],
         currentOwner: { 
             type: String, 
