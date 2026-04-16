@@ -136,7 +136,7 @@ export default function UserProfile() {
             type: 'choice',
             title: 'Update Photo',
             message: 'Change your profile picture. How would you like to provide the image?',
-            callback: (choice) => {
+            callback: async (choice) => {
                 if (choice === 'system') {
                     fileInputRef.current.click();
                 } else if (choice === 'avatar') {
