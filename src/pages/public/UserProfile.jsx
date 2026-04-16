@@ -172,6 +172,30 @@ export default function UserProfile() {
                             }
                         }
                     });
+                } else if (choice === 'initials') {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/users/${profileUser._id}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${currentUser?.token}`
+                            },
+                            body: JSON.stringify({ profilePicture: "" })
+                        });
+
+                        if (res.ok) {
+                            const updatedUser = await res.json();
+                            const formattedUser = { ...updatedUser, id: updatedUser.id || updatedUser._id };
+                            setProfileUser(formattedUser);
+                            if (currentUser?.id === formattedUser.id) {
+                                updateUser(formattedUser);
+                            }
+                            showModal({ title: 'Profile Reset', message: 'Your profile picture has been reset to your initials.' });
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showModal({ title: 'Error', message: 'Failed to reset profile picture.' });
+                    }
                 } else if (choice === 'url') {
                     showModal({
                         type: 'url',
@@ -490,6 +514,7 @@ export default function UserProfile() {
                                 <>
                                     <button onClick={() => { closeModal(); modal.callback('system'); }} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-glow-primary active:scale-95 flex items-center justify-center gap-2">📁 System Storage</button>
                                     <button onClick={() => { closeModal(); modal.callback('avatar'); }} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all shadow-glow-primary active:scale-95 flex items-center justify-center gap-2">⚡ Select Avatar</button>
+                                    <button onClick={() => { closeModal(); modal.callback('initials'); }} className="w-full py-4 bg-slate-700 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2">🔤 Reset to Initials</button>
                                     <button onClick={() => { closeModal(); modal.callback('url'); }} className="w-full py-4 bg-[var(--bg-main)] text-[var(--text-main)] rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-[var(--glass-bg)] transition-all active:scale-95 border border-[var(--border-main)] flex items-center justify-center gap-2">🔗 External Link</button>
                                 </>
                             )}
