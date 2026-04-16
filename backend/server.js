@@ -36,7 +36,9 @@ app.use((req, res, next) => {
 // Security Middleware
 // --------------------
 // 1. Set secure HTTP headers
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // 2. Disable CORS restrictions
 app.use(cors({
