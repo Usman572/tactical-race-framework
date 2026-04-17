@@ -514,12 +514,29 @@ const updateTelemetry = async (req, res) => {
         // Find or initialize telemetry entry for this user
         let userTelemIndex = race.telemetry.findIndex(t => t.user.toString() === userId.toString());
         
+        const prevTelem = userTelemIndex > -1 ? race.telemetry[userTelemIndex] : null;
+        
+        // --- Neural Link Biometric Simulations ---
+        const currentSpeed = speed !== undefined ? speed : (prevTelem ? prevTelem.speed : 0);
+        const baseHR = 70;
+        const targetHR = baseHR + (currentSpeed * 0.8) + (Math.random() * 5);
+        const heartRate = Math.min(195, Math.max(60, targetHR));
+
+        const prevSpeed = prevTelem ? prevTelem.speed : 0;
+        const speedDelta = Math.abs(currentSpeed - prevSpeed);
+        const adrenaline = Math.min(100, (prevTelem ? prevTelem.adrenaline : 0) * 0.95 + (speedDelta * 5)); // Decays, but spikes with delta
+        
+        const syncLevel = Math.min(100, (prevTelem ? prevTelem.syncLevel : 0) * 0.99 + (status === 'En Route' ? 0.5 : 0.1));
+
         const updateData = {
             user: userId,
-            progress: progress !== undefined ? progress : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].progress : 0),
-            speed: speed !== undefined ? speed : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].speed : 0),
-            lap: lap !== undefined ? lap : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].lap : 1),
-            status: status || (userTelemIndex > -1 ? race.telemetry[userTelemIndex].status : 'En Route'),
+            progress: progress !== undefined ? progress : (prevTelem ? prevTelem.progress : 0),
+            speed: currentSpeed,
+            heartRate: Math.round(heartRate),
+            adrenaline: Math.round(adrenaline),
+            syncLevel: Math.round(syncLevel),
+            lap: lap !== undefined ? lap : (prevTelem ? prevTelem.lap : 1),
+            status: status || (prevTelem ? prevTelem.status : 'En Route'),
             lastUpdated: Date.now()
         };
 

@@ -20,6 +20,9 @@ const raceSchema = mongoose.Schema(
             progress: { type: Number, default: 0 }, // 0 to 100
             lap: { type: Number, default: 1 },
             speed: { type: Number, default: 0 },
+            heartRate: { type: Number, default: 70 },
+            adrenaline: { type: Number, default: 0 },
+            syncLevel: { type: Number, default: 0 },
             status: { type: String, enum: ['En Route', 'Pit', 'Retired', 'Finished'], default: 'En Route' },
             lastUpdated: { type: Date, default: Date.now }
         }],
