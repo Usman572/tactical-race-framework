@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CommsChannel from "../../components/CommsChannel";
 import MissionCertificate from "../../components/MissionCertificate";
 import FactionDominance from "../../components/FactionDominance";
+import NeuralLink from "../../components/NeuralLink";
 import RegistrationModal from "../../components/RegistrationModal";
 
 export default function RaceDetails() {
@@ -232,6 +233,19 @@ export default function RaceDetails() {
                                             participants={race.participants} 
                                             sectorName={race.sector} 
                                             userFaction={user?.faction} 
+                                        />
+                                    </motion.div>
+                                )}
+                                
+                                {race.status === 'Live' && race.telemetry?.length > 0 && (
+                                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+                                        <h4 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-8 italic opacity-60 flex items-center gap-4">
+                                            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                                            Live Neural Feed
+                                        </h4>
+                                        <NeuralLink 
+                                            data={race.telemetry.find(t => t.user?._id === user?.id || t.user === user?.id) || race.telemetry[0]} 
+                                            isActive={true} 
                                         />
                                     </motion.div>
                                 )}
