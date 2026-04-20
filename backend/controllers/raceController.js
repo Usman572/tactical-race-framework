@@ -49,6 +49,47 @@ const getRaces = async (req, res) => {
     }
 };
 
+const getLiveRaces = async (req, res) => {
+    try {
+        const races = await Race.find({ 
+            status: { $in: ['Live', 'Active'] } 
+        })
+        .populate('participants', 'name email slug faction profilePicture')
+        .populate('createdBy', 'name email role slug profilePicture');
+
+        res.json(races);
+    } catch (err) {
+        console.error('getLiveRaces error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const broadcastAdminAlert = async (req, res) => {
+    try {
+        const { message, raceId, type = 'Critical' } = req.body;
+        if (!message) return res.status(400).json({ message: 'Message is required' });
+
+        const io = socketManager.getIO();
+        const alertPayload = {
+            id: Date.now(),
+            message,
+            type,
+            timestamp: new Date()
+        };
+
+        if (raceId && raceId !== 'global') {
+            io.to(`race_${raceId}`).emit('admin_alert', alertPayload);
+        } else {
+            io.emit('admin_alert', alertPayload);
+        }
+
+        res.json({ success: true, payload: alertPayload });
+    } catch (err) {
+        console.error('broadcastAdminAlert error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 const createRace = async (req, res) => {
     try {
         const { name, location, date, type, status, trackLength, sector, bannerImage, maxParticipants, registrationDeadline } = req.body;
@@ -552,11 +593,17 @@ const updateTelemetry = async (req, res) => {
         // Broadcast pulse
         try {
             const io = socketManager.getIO();
-            io.to(`race_${id}`).emit('telemetry_pulse', {
+            const pulseData = {
                 raceId: id,
                 userId,
                 telemetry: updateData
-            });
+            };
+            
+            // 1. Broadcast to specific race channel
+            io.to(`race_${id}`).emit('telemetry_pulse', pulseData);
+            
+            // 2. Mirror to Admin War Room
+            io.to('admin_war_room').emit('telemetry_pulse', pulseData);
         } catch (err) {}
 
         res.json({ success: true });
@@ -778,5 +825,7 @@ module.exports = {
     startCountdown,
     completeRace,
     updateTelemetry,
-    handleRaceCommand
+    handleRaceCommand,
+    getLiveRaces,
+    broadcastAdminAlert
 };

@@ -18,7 +18,9 @@ const {
     startCountdown,
     completeRace,
     updateTelemetry,
-    handleRaceCommand
+    handleRaceCommand,
+    getLiveRaces,
+    broadcastAdminAlert
 } = require('../controllers/raceController');
 const { protect } = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
@@ -83,5 +85,10 @@ router.post('/:id/start-countdown', protect, startCountdown);
 router.post('/:id/complete', protect, completeRace);
 router.post('/:id/telemetry', protect, updateTelemetry);
 router.post('/:id/command', protect, handleRaceCommand);
+
+// Admin War Room Routes
+const { admin } = require('../middleware/authMiddleware');
+router.get('/live/all', protect, admin, getLiveRaces);
+router.post('/broadcast-alert', protect, admin, broadcastAdminAlert);
 
 module.exports = router;
