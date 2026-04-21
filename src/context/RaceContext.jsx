@@ -15,7 +15,7 @@ export function RaceProvider({ children }) {
     const [filters, setFilters] = useState({
         sectors: [],
         types: [],
-        maxDistance: 1000
+        maxDistance: 5000
     });
     
     const { user, logout } = useAuth();
@@ -407,7 +407,7 @@ export function RaceProvider({ children }) {
             const matchesSector = filters.sectors.length === 0 || filters.sectors.includes(race.sector);
             const matchesType = filters.types.length === 0 || filters.types.includes(race.type);
             const raceDistance = parseFloat(race.trackLength) || 0;
-            const filterDistance = parseFloat(filters.maxDistance) || 1000;
+            const filterDistance = parseFloat(filters.maxDistance) || 5000;
             const matchesDistance = raceDistance <= filterDistance;
             return matchesSector && matchesType && matchesDistance;
         });

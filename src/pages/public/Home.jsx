@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -135,7 +134,7 @@ const GuestHero = () => (
 );
 
 export default function Home() {
-    const { races, loading } = useRaces();
+    const { races, filteredRaces, loading } = useRaces();
     const { user } = useAuth();
     const { scrollY } = useScroll();
     const heroY = useTransform(scrollY, [0, 500], [0, 200]);
@@ -264,8 +263,8 @@ export default function Home() {
                     >
                         {loading ? (
                             Array(6).fill(0).map((_, i) => <RaceCardSkeleton key={i} />)
-                        ) : races.length > 0 ? (
-                            races.map((race) => (
+                        ) : filteredRaces.length > 0 ? (
+                            filteredRaces.map((race) => (
                                 <motion.div
                                     key={race._id}
                                     variants={{

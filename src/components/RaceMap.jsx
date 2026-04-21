@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
+import { useRaces } from '../context/RaceContext';
 
 // Fix for default Leaflet markers in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -115,7 +116,17 @@ function MapController({ races, selectedSector }) {
 
 export default function RaceMap({ races = [] }) {
     const center = [20, 0];
-    const [selectedSector, setSelectedSector] = useState('ALL');
+    const { filters, setFilters } = useRaces();
+    const selectedSector = filters.sectors.length === 1 ? filters.sectors[0] : (filters.sectors.length > 1 ? 'MULTIPLE' : 'ALL');
+    
+    const setSelectedSector = (sector) => {
+        if (sector === 'ALL') {
+            setFilters(prev => ({ ...prev, sectors: [] }));
+        } else {
+            setFilters(prev => ({ ...prev, sectors: [sector] }));
+        }
+    };
+
     const [stats, setStats] = useState({ active: 0, total: races.length });
     const [territories, setTerritories] = useState([]);
 

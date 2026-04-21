@@ -101,22 +101,22 @@ const TacticalFilter = ({ filters, setFilters, isOpen, setIsOpen }) => {
                                     <input 
                                         type="range" 
                                         min="0" 
-                                        max="1000" 
-                                        step="10"
+                                        max="5000" 
+                                        step="50"
                                         value={filters.maxDistance}
                                         onChange={(e) => setFilters(prev => ({ ...prev, maxDistance: parseInt(e.target.value) }))}
                                         className="w-full h-1 bg-[var(--bg-main)] rounded-lg appearance-none cursor-pointer accent-blue-600 border border-[var(--border-main)]"
                                     />
                                     <div className="flex justify-between mt-4">
                                         <span className="text-[9px] font-black opacity-20 text-[var(--text-main)] uppercase tracking-widest italic">Min Limit</span>
-                                        <span className="text-[9px] font-black opacity-20 text-[var(--text-main)] uppercase tracking-widest italic">1K KM Limit</span>
+                                        <span className="text-[9px] font-black opacity-20 text-[var(--text-main)] uppercase tracking-widest italic">5K KM Limit</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Reset Button */}
                             <button
-                                onClick={() => setFilters({ sectors: [], types: [], maxDistance: 1000 })}
+                                onClick={() => setFilters({ sectors: [], types: [], maxDistance: 5000 })}
                                 className="w-full py-5 bg-[var(--bg-main)] text-[var(--text-main)] rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--glass-bg)] hover:text-red-500 transition-all mt-10 border border-[var(--border-main)] group active:scale-95 italic"
                             >
                                 <span className="group-hover:animate-pulse">Reset Parameters</span>
