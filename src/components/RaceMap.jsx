@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
+import { useRaces } from '../context/RaceContext';
 
 // Fix for default Leaflet markers in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -115,9 +116,11 @@ function MapController({ races, selectedSector }) {
 
 export default function RaceMap({ races = [] }) {
     const center = [20, 0];
-    const [selectedSector, setSelectedSector] = useState('ALL');
+    const { filters, updateFilter, clearFilters } = useRaces();
     const [stats, setStats] = useState({ active: 0, total: races.length });
     const [territories, setTerritories] = useState([]);
+
+    const selectedSector = filters.sectors.length > 0 ? filters.sectors[0] : 'ALL';
 
     useEffect(() => {
         const fetchTerritories = async () => {
@@ -141,6 +144,23 @@ export default function RaceMap({ races = [] }) {
             total: filtered.length
         });
     }, [selectedSector, races]);
+
+    const toggleSector = (sector) => {
+        if (sector === 'ALL') {
+            updateFilter('sectors', []);
+        } else {
+            updateFilter('sectors', [sector]);
+        }
+    };
+
+    const toggleType = (type) => {
+        const currentTypes = filters.types;
+        if (currentTypes.includes(type)) {
+            updateFilter('types', currentTypes.filter(t => t !== type));
+        } else {
+            updateFilter('types', [...currentTypes, type]);
+        }
+    };
 
     return (
         <motion.div
@@ -298,7 +318,7 @@ export default function RaceMap({ races = [] }) {
 
                     <div className="space-y-3">
                         <button 
-                            onClick={() => setSelectedSector('ALL')}
+                            onClick={() => toggleSector('ALL')}
                             className={`w-full flex items-center justify-between px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.3em] transition-all bg-transparent group/btn ${selectedSector === 'ALL' ? 'text-white border-l-2 border-white' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
                         >
                             <span className="group-hover/btn:translate-x-2 transition-transform">Global Override</span>
@@ -312,7 +332,7 @@ export default function RaceMap({ races = [] }) {
                             return (
                                 <button
                                     key={sector}
-                                    onClick={() => setSelectedSector(sector)}
+                                    onClick={() => toggleSector(sector)}
                                     className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
                                     style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
                                 >
@@ -326,6 +346,54 @@ export default function RaceMap({ races = [] }) {
                             );
                         })}
                     </div>
+
+                    {/* New Module: Engagement Types */}
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mb-4">Engagement Types</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            {['Marathon', 'Sprint', 'Circuit', 'Off-road'].map(type => {
+                                const isActive = filters.types.includes(type);
+                                return (
+                                    <button
+                                        key={type}
+                                        onClick={() => toggleType(type)}
+                                        className={`py-2.5 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${isActive ? 'bg-blue-600 border-blue-500 text-white' : 'border-white/5 text-slate-500 hover:border-white/10'}`}
+                                    >
+                                        {type}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* New Module: Distance Threshold */}
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em]">Max Distance</h4>
+                            <span className="text-[9px] font-black text-blue-500 tabular-nums uppercase tracking-widest">{filters.maxDistance} KM</span>
+                        </div>
+                        <input 
+                            type="range"
+                            min="5"
+                            max="100"
+                            step="5"
+                            value={filters.maxDistance}
+                            onChange={(e) => updateFilter('maxDistance', e.target.value)}
+                            className="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                        <div className="flex justify-between text-[7px] font-black text-slate-600 uppercase tracking-widest px-1">
+                            <span>5 KM</span>
+                            <span>100 KM</span>
+                        </div>
+                    </div>
+
+                    {/* Reset Controls */}
+                    <button 
+                        onClick={clearFilters}
+                        className="w-full mt-8 py-3 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white text-[8px] font-black uppercase tracking-[0.4em] transition-all border border-white/5 rounded-xl italic"
+                    >
+                        🔄 Reset Tactical Array
+                    </button>
                 </motion.div>
             </div>
 

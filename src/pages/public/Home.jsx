@@ -135,7 +135,7 @@ const GuestHero = () => (
 );
 
 export default function Home() {
-    const { races, loading } = useRaces();
+    const { races, filteredRaces, loading } = useRaces();
     const { user } = useAuth();
     const { scrollY } = useScroll();
     const heroY = useTransform(scrollY, [0, 500], [0, 200]);
@@ -264,8 +264,8 @@ export default function Home() {
                     >
                         {loading ? (
                             Array(6).fill(0).map((_, i) => <RaceCardSkeleton key={i} />)
-                        ) : races.length > 0 ? (
-                            races.map((race) => (
+                        ) : filteredRaces.length > 0 ? (
+                            filteredRaces.map((race) => (
                                 <motion.div
                                     key={race._id}
                                     variants={{
@@ -282,8 +282,8 @@ export default function Home() {
                         ) : (
                             <div className="col-span-full py-32 bg-[var(--glass-bg)] backdrop-blur-md rounded-[3rem] border border-[var(--border-main)] text-center shadow-2xl relative overflow-hidden group">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_var(--accent-primary-glow)_0%,_transparent_70%)] opacity-0 group-hover:opacity-10 transition-opacity duration-1000"></div>
-                                <span className="opacity-20 font-black uppercase tracking-[0.5em] text-sm animate-pulse italic">
-                                    No active data streams detected
+                                <span className="opacity-20 font-black uppercase tracking-[0.3em] text-sm animate-pulse italic">
+                                    No tactical matches found for current filters.
                                 </span>
                             </div>
                         )}
