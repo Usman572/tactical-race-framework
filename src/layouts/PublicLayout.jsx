@@ -15,6 +15,7 @@ import LatencyIndicator from "../components/LatencyIndicator";
 import ErrorBoundary from "../components/ErrorBoundary";
 import GlobalMissionAlert from "../components/GlobalMissionAlert";
 import AdminAlert from "../components/AdminAlert";
+import XPPulse from "../components/XPPulse";
 import { API_BASE_URL } from "../config/api";
 
 export default function PublicLayout() {
@@ -278,6 +279,7 @@ export default function PublicLayout() {
       {/* Global Mission Pulse */}
       <GlobalMissionAlert />
       <AdminAlert />
+      <XPPulse />
 
       {/* Spacer for sticky header */}
       <div className="h-[90px]" />
