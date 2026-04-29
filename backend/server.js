@@ -92,6 +92,7 @@ app.use('/api/partner', require('./routes/partnerRoutes'));
 app.use('/api/missions', require('./routes/missionRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/factions', require('./routes/factionRoutes'));
 
 // --------------------
 // Test route

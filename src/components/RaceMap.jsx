@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
@@ -19,6 +19,14 @@ const sectorThemes = {
     'The Void': { color: '#d300ff', glow: 'rgba(211,0,255,0.8)', icon: '🟪' },
     'Cyber City': { color: '#ff0055', glow: 'rgba(255,0,85,0.8)', icon: '🎴' },
     'Industrial Zone': { color: '#00ff66', glow: 'rgba(0,255,102,0.8)', icon: '🟩' }
+};
+
+const factionColors = {
+    'Cyber Shadows': '#3b82f6',
+    'The Vanguard': '#f59e0b',
+    'Neon Pulse': '#ec4899',
+    'Void Runners': '#a855f7',
+    'None': '#64748b'
 };
 
 const getSectorIcon = (sector, isDimmed) => {
@@ -101,6 +109,22 @@ export default function RaceMap({ races = [] }) {
     const center = [20, 0];
     const [selectedSector, setSelectedSector] = useState('ALL');
     const [stats, setStats] = useState({ active: 0, total: races.length });
+    const [territories, setTerritories] = useState([]);
+
+    useEffect(() => {
+        const fetchTerritories = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/factions/territories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setTerritories(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch territories", err);
+            }
+        };
+        fetchTerritories();
+    }, []);
 
     useEffect(() => {
         const filtered = selectedSector === 'ALL' ? races : races.filter(r => r.sector === selectedSector);
@@ -125,6 +149,34 @@ export default function RaceMap({ races = [] }) {
                 />
                 
                 <MapController races={races} selectedSector={selectedSector} />
+
+                {/* Territory Polygons */}
+                {territories.map((territory) => {
+                    const ownerColor = factionColors[territory.currentOwner] || factionColors['None'];
+                    const isFocused = selectedSector === territory.sectorName || selectedSector === 'ALL';
+                    
+                    return (
+                        <Polygon
+                            key={territory._id}
+                            positions={territory.boundary}
+                            pathOptions={{
+                                color: ownerColor,
+                                fillColor: ownerColor,
+                                fillOpacity: isFocused ? 0.15 : 0.05,
+                                weight: isFocused ? 3 : 1,
+                                dashArray: isFocused ? '10, 10' : '0',
+                                lineJoin: 'round'
+                            }}
+                        >
+                            <Popup>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-900">
+                                    <div className="mb-1 border-b border-slate-200 pb-1">{territory.sectorName}</div>
+                                    <div style={{ color: ownerColor }}>Controlled by: {territory.currentOwner}</div>
+                                </div>
+                            </Popup>
+                        </Polygon>
+                    );
+                })}
 
                 {races.map((race) => {
                     const position = generateMockCoords(race._id, race.sector);
@@ -259,20 +311,26 @@ export default function RaceMap({ races = [] }) {
                             {selectedSector === 'ALL' && <div className="w-2 h-2 bg-white rounded-sm animate-pulse shadow-[0_0_10px_white]"></div>}
                         </button>
                         
-                        {Object.keys(sectorThemes).map(sector => (
-                            <button
-                                key={sector}
-                                onClick={() => setSelectedSector(sector)}
-                                className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
-                                style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
-                            >
-                                <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
-                                    <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
-                                </div>
-                                {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
-                                {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
-                            </button>
-                        ))}
+                        {Object.keys(sectorThemes).map(sector => {
+                            const territory = territories.find(t => t.sectorName === sector);
+                            const owner = territory?.currentOwner || 'None';
+                            
+                            return (
+                                <button
+                                    key={sector}
+                                    onClick={() => setSelectedSector(sector)}
+                                    className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
+                                    style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
+                                >
+                                    <div className="flex items-center gap-3 group-hover/btn:translate-x-2 transition-transform">
+                                        <span style={{ color: selectedSector === sector ? sectorThemes[sector].color : '' }}>{sector}</span>
+                                        {owner !== 'None' && <span className="text-[7px] bg-white/5 px-1.5 py-0.5 rounded-sm opacity-60" style={{ color: factionColors[owner] }}>{owner.split(' ')[0]}</span>}
+                                    </div>
+                                    {selectedSector !== sector && <span className="opacity-40 grayscale scale-75 transition-all group-hover/btn:opacity-100 group-hover/btn:grayscale-0 group-hover/btn:scale-100">{sectorThemes[sector].icon}</span>}
+                                    {selectedSector === sector && <div className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: sectorThemes[sector].color, boxShadow: `0 0 15px ${sectorThemes[sector].color}` }}></div>}
+                                </button>
+                            );
+                        })}
                     </div>
                 </motion.div>
             </div>
