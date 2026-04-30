@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-
 const sectorOwnershipSchema = mongoose.Schema(
     {
         sectorName: { 

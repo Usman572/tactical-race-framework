@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
@@ -178,6 +178,34 @@ export default function RaceMap({ races = [] }) {
                 
                 <MapController races={races} selectedSector={selectedSector} />
 
+                {/* Territory Polygons */}
+                {territories.map((territory) => {
+                    const ownerColor = factionColors[territory.currentOwner] || factionColors['None'];
+                    const isFocused = selectedSector === territory.sectorName || selectedSector === 'ALL';
+                    
+                    return (
+                        <Polygon
+                            key={territory._id}
+                            positions={territory.boundary}
+                            pathOptions={{
+                                color: ownerColor,
+                                fillColor: ownerColor,
+                                fillOpacity: isFocused ? 0.15 : 0.05,
+                                weight: isFocused ? 3 : 1,
+                                dashArray: isFocused ? '10, 10' : '0',
+                                lineJoin: 'round'
+                            }}
+                        >
+                            <Popup>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-900">
+                                    <div className="mb-1 border-b border-slate-200 pb-1">{territory.sectorName}</div>
+                                    <div style={{ color: ownerColor }}>Controlled by: {territory.currentOwner}</div>
+                                </div>
+                            </Popup>
+                        </Polygon>
+                    );
+                })}
+
                 {races.map((race) => {
                     const position = generateMockCoords(race._id, race.sector);
                     const theme = sectorThemes[race.sector] || sectorThemes['Neon District'];
@@ -331,8 +359,7 @@ export default function RaceMap({ races = [] }) {
                             
                             return (
                                 <button
-                                    key={sector}
-                                    onClick={() => toggleSector(sector)}
+                                    key={sector}                                    onClick={() => toggleSector(sector)}
                                     className={`w-full flex items-center justify-between px-5 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all group/btn ${selectedSector === sector ? 'text-white border-l-2' : 'text-slate-500 hover:text-white border-l-2 border-transparent'}`}
                                     style={{ borderLeftColor: selectedSector === sector ? sectorThemes[sector].color : '' }}
                                 >
