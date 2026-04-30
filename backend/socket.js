@@ -35,6 +35,11 @@ const init = (server) => {
             }
         });
 
+        socket.on('join_admin_feed', () => {
+            socket.join('admin_war_room');
+            console.log(`Administrator ${socket.id} joined global command feed`);
+        });
+
         socket.on('leave_race_chat', (raceId) => {
             if (raceId) {
                 socket.leave(`race_${raceId}`);

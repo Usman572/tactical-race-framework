@@ -2,6 +2,7 @@ const Race = require('../models/Race.js');
 const User = require('../models/User.js');
 const Notification = require('../models/Notification.js');
 const JoinRequest = require('../models/JoinRequest.js');
+const SectorOwnership = require('../models/SectorOwnership.js');
 const socketManager = require('../socket');
 
 const getRaceById = async (req, res) => {
@@ -44,6 +45,47 @@ const getRaces = async (req, res) => {
         res.json(races);
     } catch (err) {
         console.error('getRaces error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getLiveRaces = async (req, res) => {
+    try {
+        const races = await Race.find({ 
+            status: { $in: ['Live', 'Active'] } 
+        })
+        .populate('participants', 'name email slug faction profilePicture')
+        .populate('createdBy', 'name email role slug profilePicture');
+
+        res.json(races);
+    } catch (err) {
+        console.error('getLiveRaces error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const broadcastAdminAlert = async (req, res) => {
+    try {
+        const { message, raceId, type = 'Critical' } = req.body;
+        if (!message) return res.status(400).json({ message: 'Message is required' });
+
+        const io = socketManager.getIO();
+        const alertPayload = {
+            id: Date.now(),
+            message,
+            type,
+            timestamp: new Date()
+        };
+
+        if (raceId && raceId !== 'global') {
+            io.to(`race_${raceId}`).emit('admin_alert', alertPayload);
+        } else {
+            io.emit('admin_alert', alertPayload);
+        }
+
+        res.json({ success: true, payload: alertPayload });
+    } catch (err) {
+        console.error('broadcastAdminAlert error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -513,12 +555,29 @@ const updateTelemetry = async (req, res) => {
         // Find or initialize telemetry entry for this user
         let userTelemIndex = race.telemetry.findIndex(t => t.user.toString() === userId.toString());
         
+        const prevTelem = userTelemIndex > -1 ? race.telemetry[userTelemIndex] : null;
+        
+        // --- Neural Link Biometric Simulations ---
+        const currentSpeed = speed !== undefined ? speed : (prevTelem ? prevTelem.speed : 0);
+        const baseHR = 70;
+        const targetHR = baseHR + (currentSpeed * 0.8) + (Math.random() * 5);
+        const heartRate = Math.min(195, Math.max(60, targetHR));
+
+        const prevSpeed = prevTelem ? prevTelem.speed : 0;
+        const speedDelta = Math.abs(currentSpeed - prevSpeed);
+        const adrenaline = Math.min(100, (prevTelem ? prevTelem.adrenaline : 0) * 0.95 + (speedDelta * 5)); // Decays, but spikes with delta
+        
+        const syncLevel = Math.min(100, (prevTelem ? prevTelem.syncLevel : 0) * 0.99 + (status === 'En Route' ? 0.5 : 0.1));
+
         const updateData = {
             user: userId,
-            progress: progress !== undefined ? progress : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].progress : 0),
-            speed: speed !== undefined ? speed : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].speed : 0),
-            lap: lap !== undefined ? lap : (userTelemIndex > -1 ? race.telemetry[userTelemIndex].lap : 1),
-            status: status || (userTelemIndex > -1 ? race.telemetry[userTelemIndex].status : 'En Route'),
+            progress: progress !== undefined ? progress : (prevTelem ? prevTelem.progress : 0),
+            speed: currentSpeed,
+            heartRate: Math.round(heartRate),
+            adrenaline: Math.round(adrenaline),
+            syncLevel: Math.round(syncLevel),
+            lap: lap !== undefined ? lap : (prevTelem ? prevTelem.lap : 1),
+            status: status || (prevTelem ? prevTelem.status : 'En Route'),
             lastUpdated: Date.now()
         };
 
@@ -534,11 +593,17 @@ const updateTelemetry = async (req, res) => {
         // Broadcast pulse
         try {
             const io = socketManager.getIO();
-            io.to(`race_${id}`).emit('telemetry_pulse', {
+            const pulseData = {
                 raceId: id,
                 userId,
                 telemetry: updateData
-            });
+            };
+            
+            // 1. Broadcast to specific race channel
+            io.to(`race_${id}`).emit('telemetry_pulse', pulseData);
+            
+            // 2. Mirror to Admin War Room
+            io.to('admin_war_room').emit('telemetry_pulse', pulseData);
         } catch (err) {}
 
         res.json({ success: true });
@@ -607,6 +672,76 @@ const completeRace = async (req, res) => {
         race.winners = winners;
         await race.save();
 
+        // 🏆 SECTOR DOMINANCE LOGIC
+        if (race.sector && race.sector !== 'Unassigned') {
+            try {
+                let sector = await SectorOwnership.findOne({ sectorName: race.sector });
+                if (!sector) {
+                    sector = await SectorOwnership.create({
+                        sectorName: race.sector,
+                        ownership: [
+                            { faction: 'Cyber Shadows', points: 0 },
+                            { faction: 'The Vanguard', points: 0 },
+                            { faction: 'Neon Pulse', points: 0 },
+                            { faction: 'Void Runners', points: 0 }
+                        ]
+                    });
+                }
+
+                // Award points and track wins based on winner factions
+                for (const w of winners) {
+                    const winnerUser = await User.findById(w.user);
+                    if (winnerUser && winnerUser.faction && winnerUser.faction !== 'None') {
+                        const pointsGained = w.position === 1 ? 50 : w.position === 2 ? 25 : 10;
+                        const factionEntry = sector.ownership.find(o => o.faction === winnerUser.faction);
+                        if (factionEntry) {
+                            factionEntry.points += pointsGained;
+                            if (w.position === 1) factionEntry.wins += 1;
+                        }
+                    }
+                }
+
+                // Increment participations for all participants' factions
+                const participants = await User.find({ _id: { $in: race.participants } });
+                for (const p of participants) {
+                    if (p.faction && p.faction !== 'None') {
+                        const factionEntry = sector.ownership.find(o => o.faction === p.faction);
+                        if (factionEntry) {
+                            factionEntry.participations += 1;
+                        }
+                    }
+                }
+
+                // Update owner based on Win-Rate (Weighted Points / Participations)
+                const prevOwner = sector.currentOwner;
+                // We use a blend of points and participations to determine dominance
+                const rankings = [...sector.ownership].map(f => ({
+                    faction: f.faction,
+                    rate: f.participations > 0 ? (f.points / f.participations) : 0
+                })).sort((a, b) => b.rate - a.rate);
+
+                if (rankings[0] && rankings[0].rate > 0) {
+                    sector.currentOwner = rankings[0].faction;
+                }
+                sector.lastBattleAt = Date.now();
+                await sector.save();
+
+                // Global Broadcast of Territory Shift
+                try {
+                    const io = socketManager.getIO();
+                    io.emit('territory_update', {
+                        sector: sector.sectorName,
+                        owner: sector.currentOwner,
+                        points: sector.ownership,
+                        takeover: prevOwner !== sector.currentOwner
+                    });
+                } catch (err) {}
+
+            } catch (err) {
+                console.error('Sector Dominance error:', err);
+            }
+        }
+
         // Award XP to winners
         const { awardXP } = require('../utils/gamification');
         for (const w of winners) {
@@ -614,7 +749,7 @@ const completeRace = async (req, res) => {
             if (user) {
                 const xpGain = w.position === 1 ? 250 : w.position === 2 ? 150 : 100;
                 if (w.position === 1) user.stats.wins += 1;
-                await awardXP(user, xpGain, `Race Result: ${w.position === 1 ? 'Podium' : 'Completion'}`);
+                await awardXP(user, xpGain, `Race Result: ${w.position === 1 ? 'Podium' : 'Completion'}`, race.sector);
                 
                 const { updateMissionProgress } = require('./missionController');
                 if (w.position <= 3) await updateMissionProgress(user._id, 'win');
@@ -690,5 +825,7 @@ module.exports = {
     startCountdown,
     completeRace,
     updateTelemetry,
-    handleRaceCommand
+    handleRaceCommand,
+    getLiveRaces,
+    broadcastAdminAlert
 };

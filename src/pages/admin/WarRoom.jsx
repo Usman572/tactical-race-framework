@@ -1,241 +1,344 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-    PieChart, Pie, Cell, AreaChart, Area, Legend 
-} from 'recharts';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { API_BASE_URL } from '../../config/api';
-import { measureFetch } from '../../utils/telemetry';
+import NeuralLink from '../../components/NeuralLink';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-export default function WarRoom() {
+const WarRoom = () => {
     const { user } = useAuth();
-    const [summary, setSummary] = useState(null);
-    const [trends, setTrends] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const socket = useSocket();
+    const [liveRaces, setLiveRaces] = useState([]);
+    const [telemetry, setTelemetry] = useState({}); // { raceId: { userId: telem } }
+    const [activeTab, setActiveTab] = useState('feeds'); // feeds | broadcast | intel
+    const [isLoading, setIsLoading] = useState(true);
+    const [broadcastMsg, setBroadcastMsg] = useState('');
+    const [alertType, setAlertType] = useState('Critical');
 
+    // Fetch initial live races
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchLiveRaces = async () => {
             try {
-                const [summaryRes, trendsRes] = await Promise.all([
-                    measureFetch(`${API_BASE_URL}/api/stats/summary`, {
-                        headers: { 'Authorization': `Bearer ${user.token}` }
-                    }),
-                    measureFetch(`${API_BASE_URL}/api/stats/trends`, {
-                        headers: { 'Authorization': `Bearer ${user.token}` }
-                    })
-                ]);
-
-                const summaryData = await summaryRes.json();
-                const trendsData = await trendsRes.json();
-
-                setSummary(summaryData);
-                setTrends(trendsData);
-            } catch (error) {
-                console.error('Failed to fetch stats:', error);
+                const res = await fetch(`${API_BASE_URL}/api/races/live/all`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setLiveRaces(data);
+                    
+                    // Initialize telemetry state from existing race data
+                    const initialTelem = {};
+                    data.forEach(race => {
+                        if (race.telemetry && race.telemetry.length > 0) {
+                            initialTelem[race._id] = race.telemetry[0]; // Just track lead for now
+                        }
+                    });
+                    setTelemetry(initialTelem);
+                }
+            } catch (err) {
+                console.error('War Room fetch failed:', err);
             } finally {
-                setLoading(false);
+                setIsLoading(false);
             }
         };
 
-        if (user) fetchStats();
+        if (user) fetchLiveRaces();
     }, [user]);
 
-    if (loading) return (
-        <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center relative overflow-hidden">
-             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_var(--accent-primary-glow)_0%,_transparent_50%)] opacity-20"></div>
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-glow-primary"></div>
+    // Socket Monitoring
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.emit('join_admin_feed');
+
+        socket.on('telemetry_pulse', ({ raceId, telemetry: data }) => {
+            setTelemetry(prev => ({
+                ...prev,
+                [raceId]: data
+            }));
+        });
+
+        socket.on('race_completed', (completedRace) => {
+            setLiveRaces(prev => prev.filter(r => r._id !== completedRace._id));
+            setTelemetry(prev => {
+                const newTelem = { ...prev };
+                delete newTelem[completedRace._id];
+                return newTelem;
+            });
+        });
+
+        // Listen for new races turning 'Live'
+        socket.on('command_pulse', ({ raceId, command }) => {
+           if (command === 'ENGAGE') {
+               // Re-fetch to get the full race object
+               fetch(`${API_BASE_URL}/api/races/${raceId}`, {
+                   headers: { 'Authorization': `Bearer ${user.token}` }
+               })
+               .then(res => res.json())
+               .then(data => {
+                   setLiveRaces(prev => [...prev.filter(r => r._id !== raceId), data]);
+               });
+           }
+        });
+
+        return () => {
+            socket.off('telemetry_pulse');
+            socket.off('race_completed');
+            socket.off('command_pulse');
+        };
+    }, [socket, user]);
+
+    const handleBroadcast = async () => {
+        if (!broadcastMsg) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/races/broadcast-alert`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user.token}`
+                },
+                body: JSON.stringify({
+                    message: broadcastMsg,
+                    type: alertType,
+                    raceId: 'global'
+                })
+            });
+            if (res.ok) {
+                setBroadcastMsg('');
+                // Pulse feedback
+            }
+        } catch (err) {
+            console.error('Broadcast failed:', err);
+        }
+    };
+
+    if (isLoading) return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-glow-primary" />
+            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.5em] animate-pulse">Initializing Command Bridge</span>
         </div>
     );
 
     return (
-        <div className="p-4 sm:p-10 space-y-12 bg-[var(--bg-main)] min-h-screen text-[var(--text-main)] w-full overflow-hidden transition-colors duration-500">
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 relative">
-                <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
-                <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="w-1.5 h-10 bg-blue-600 rounded-full shadow-glow-primary" />
-                        <h1 className="text-4xl sm:text-6xl font-black italic tracking-tighter uppercase">War Room</h1>
-                    </div>
-                    <p className="text-blue-500 font-black tracking-[0.4em] text-[10px] uppercase italic opacity-60">Platform Strategic Command // Level 4 Clear</p>
-                </div>
-                <div className="text-left sm:text-right relative z-10 bg-[var(--header-bg)] p-6 rounded-2xl border border-[var(--border-main)] shadow-xl min-w-[200px] group overflow-hidden">
-                    <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="text-4xl font-black text-blue-600 group-hover:scale-110 transition-transform duration-500">{summary?.summary.activeOperatives}</div>
-                    <div className="text-[9px] opacity-30 font-black uppercase tracking-[0.3em] mt-1 italic">Active Operatives (24h)</div>
-                </div>
-            </header>
-
-            {/* Quick Stats Grid */}
-            <motion.div 
-                variants={{
-                    hidden: { opacity: 0 },
-                    show: {
-                        opacity: 1,
-                        transition: { staggerChildren: 0.1 }
-                    }
-                }}
-                initial="hidden"
-                animate="show"
-                className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            >
-                {[
-                    { label: 'Total Deployments', value: summary?.summary.totalRaces, color: 'text-blue-500', glow: 'shadow-glow-primary' },
-                    { label: 'Registered Assets', value: summary?.summary.totalUsers, color: 'text-emerald-500', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.2)]' },
-                    { label: 'System Uptime', value: '99.9%', color: 'text-purple-500', glow: 'shadow-[0_0_20px_rgba(168,85,247,0.2)]' }
-                ].map((stat, i) => (
-                    <motion.div 
-                        variants={{
-                            hidden: { opacity: 0, y: 20 },
-                            show: { opacity: 1, y: 0 }
-                        }}
-                        key={stat.label}
-                        whileHover={{ y: -5, transition: { duration: 0.3 } }}
-                        className="bg-[var(--header-bg)] backdrop-blur-xl border border-[var(--border-main)] p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="text-[10px] font-black opacity-30 uppercase tracking-[0.4em] mb-4 italic">{stat.label}</div>
-                        <div className={`text-4xl font-black ${stat.color} tracking-tighter italic ${stat.glow}`}>{stat.value}</div>
-                        <div className="absolute bottom-4 right-8 opacity-5 text-4xl font-black italic uppercase select-none">{stat.label.split(' ')[1]}</div>
-                    </motion.div>
-                ))}
-            </motion.div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full min-w-0">
-                {/* Faction Power Distribution */}
-                <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-[var(--header-bg)] backdrop-blur-xl border border-[var(--border-main)] p-6 sm:p-10 rounded-[3rem] h-[400px] sm:h-[500px] min-w-0 shadow-2xl relative"
-                >
-                    <div className="flex items-center gap-4 mb-10">
-                        <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
-                        <h3 className="text-sm sm:text-lg font-black uppercase tracking-[0.2em] italic">Faction Distribution</h3>
-                    </div>
-                    <div className="w-full h-[calc(100%-5rem)] min-w-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={summary?.factions}
-                                cx="50%"
-                                cy="45%"
-                                innerRadius={80}
-                                outerRadius={130}
-                                paddingAngle={8}
-                                dataKey="xp"
-                                stroke="none"
-                            >
-                                {summary?.factions.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip 
-                                contentStyle={{ 
-                                    backgroundColor: 'var(--header-bg)', 
-                                    border: '1px solid var(--border-main)', 
-                                    borderRadius: '1.5rem',
-                                    backdropFilter: 'blur(20px)',
-                                    fontWeight: '900',
-                                    textTransform: 'uppercase',
-                                    fontSize: '10px',
-                                    letterSpacing: '0.1em'
-                                }}
-                                itemStyle={{ color: 'var(--text-main)' }}
-                            />
-                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6 }} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                    </div>
-                </motion.div>
-
-                {/* Race Deployment Trends */}
-                <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-[var(--header-bg)] backdrop-blur-xl border border-[var(--border-main)] p-6 sm:p-10 rounded-[3rem] h-[400px] sm:h-[500px] min-w-0 overflow-hidden shadow-2xl relative"
-                >
-                    <div className="flex items-center gap-4 mb-10">
-                        <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
-                        <h3 className="text-sm sm:text-lg font-black uppercase tracking-[0.2em] italic">Deployment Velocity</h3>
-                    </div>
-                    <div className="w-full h-[calc(100%-5rem)] min-w-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={trends}>
-                            <defs>
-                                <linearGradient id="colorWave" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-main)" opacity={0.3} vertical={false} />
-                            <XAxis 
-                                dataKey="date" 
-                                stroke="var(--text-main)" 
-                                opacity={0.3}
-                                fontSize={9} 
-                                tickFormatter={(val) => val.split('-').slice(1).join('/')}
-                                axisLine={false}
-                                tickLine={false}
-                                dy={10}
-                            />
-                            <YAxis 
-                                stroke="var(--text-main)" 
-                                opacity={0.3}
-                                fontSize={9} 
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <Tooltip 
-                                contentStyle={{ 
-                                    backgroundColor: 'var(--header-bg)', 
-                                    border: '1px solid var(--border-main)', 
-                                    borderRadius: '1.5rem',
-                                    backdropFilter: 'blur(20px)',
-                                    fontWeight: '900',
-                                    textTransform: 'uppercase',
-                                    fontSize: '10px',
-                                    letterSpacing: '0.1em'
-                                }}
-                                itemStyle={{ color: '#3b82f6' }}
-                            />
-                            <Area 
-                                type="monotone" 
-                                dataKey="deployments" 
-                                stroke="#3b82f6" 
-                                fillOpacity={1} 
-                                fill="url(#colorWave)" 
-                                strokeWidth={4}
-                                animationDuration={2000}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                    </div>
-                </motion.div>
+        <div className="min-h-screen bg-black text-white selection:bg-blue-600/30">
+            {/* Background Matrix-style Grid Overlay */}
+            <div className="fixed inset-0 opacity-[0.05] pointer-events-none z-0">
+                <div className="w-full h-full bg-[repeating-linear-gradient(0deg,transparent,transparent_1px,rgba(255,255,255,0.05)_1px,rgba(255,255,255,0.05)_2px)]" />
+                <div className="w-full h-full bg-[repeating-linear-gradient(90deg,transparent,transparent_1px,rgba(255,255,255,0.05)_1px,rgba(255,255,255,0.05)_2px)]" />
             </div>
 
-            {/* Sector Control Grid */}
-            <motion.div 
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="bg-[var(--header-bg)] backdrop-blur-xl border border-[var(--border-main)] p-10 rounded-[3rem] shadow-2xl relative overflow-hidden"
-            >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/5 blur-[80px] rounded-full pointer-events-none" />
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
-                    <h3 className="text-lg font-black uppercase tracking-[0.2em] italic">Sector Intelligence</h3>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                    {summary?.sectors.map((sector, i) => (
-                        <div key={sector.name} className="p-6 bg-[var(--bg-main)]/50 rounded-[2rem] border border-[var(--border-main)] flex flex-col items-center group hover:border-blue-500/50 transition-colors duration-500">
-                            <div className="text-[9px] font-black opacity-30 uppercase tracking-[0.3em] mb-2 group-hover:opacity-100 group-hover:text-blue-500 transition-all">{sector.name}</div>
-                            <div className="text-3xl font-black italic tracking-tighter truncate w-full text-center">{sector.count}</div>
+            <div className="relative z-10 flex flex-col h-screen">
+                {/* 1. Tactical Header */}
+                <header className="px-10 py-8 border-b border-white/10 flex items-center justify-between bg-black/80 backdrop-blur-3xl">
+                    <div className="flex items-center gap-6">
+                        <div className="w-1.5 h-10 bg-red-600 rounded-full shadow-[0_0_15px_#ef4444]" />
+                        <div>
+                            <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The War Room</h1>
+                            <p className="text-[9px] font-black text-blue-500 uppercase tracking-[0.4em] italic mt-1">Platform Strategic Command // LIVE</p>
                         </div>
-                    ))}
+                    </div>
+
+                    <div className="flex items-center gap-12">
+                        <div className="text-right">
+                            <div className="text-3xl font-black text-blue-500 tabular-nums leading-none tracking-tighter">{liveRaces.length}</div>
+                            <div className="text-[8px] font-black uppercase tracking-widest opacity-30 mt-1">Active Deployments</div>
+                        </div>
+                        <div className="h-10 w-px bg-white/10" />
+                        <div className="text-right">
+                            <div className="text-3xl font-black text-green-500 flex items-center gap-2 justify-end leading-none tracking-tighter">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                                99.9%
+                            </div>
+                            <div className="text-[8px] font-black uppercase tracking-widest opacity-30 mt-1">Sync Stability</div>
+                        </div>
+                    </div>
+                </header>
+
+                {/* 2. Main Layout Hub */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* A. Sidebar Controls */}
+                    <div className="w-[380px] border-r border-white/10 bg-black/40 flex flex-col">
+                        <div className="p-8 space-y-1">
+                            {['feeds', 'broadcast', 'intel'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`w-full py-4 px-6 rounded-2xl flex items-center justify-between group transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow-glow-primary' : 'hover:bg-white/5 text-white/40'}`}
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-widest italic">{tab} Center</span>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${activeTab === tab ? 'bg-white' : 'bg-transparent group-hover:bg-blue-600/50'}`} />
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+                            <AnimatePresence mode="wait">
+                                {activeTab === 'broadcast' && (
+                                    <motion.div
+                                        key="broadcast"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="space-y-8"
+                                    >
+                                        <div className="bg-red-600/10 border border-red-500/20 p-6 rounded-[2rem]">
+                                            <h4 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-4 italic">Tactical Broadcast</h4>
+                                            <textarea 
+                                                value={broadcastMsg}
+                                                onChange={(e) => setBroadcastMsg(e.target.value)}
+                                                rows={4}
+                                                placeholder="Enter mission-critical command..."
+                                                className="w-full bg-black/60 border border-white/10 rounded-xl p-4 text-xs font-black uppercase tracking-tight focus:border-red-600 focus:outline-none transition-colors"
+                                            />
+                                            <div className="grid grid-cols-2 gap-3 mt-4">
+                                                {['Critical', 'Security', 'Information'].map(t => (
+                                                    <button
+                                                        key={t}
+                                                        onClick={() => setAlertType(t)}
+                                                        className={`py-2 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${alertType === t ? 'bg-white text-black border-white' : 'border-white/10 text-white/30 hover:border-white/20'}`}
+                                                    >
+                                                        {t}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <button 
+                                                onClick={handleBroadcast}
+                                                className="w-full mt-6 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] italic transition-all active:scale-95 shadow-glow-primary"
+                                            >
+                                                ⚡ Execute Broadcast
+                                            </button>
+                                        </div>
+
+                                        <div className="p-6 bg-blue-600/5 border border-blue-500/20 rounded-[2rem]">
+                                            <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-4 italic">Recent Logs</h4>
+                                            <div className="space-y-4 opacity-40">
+                                                <div className="text-[9px] font-bold uppercase leading-relaxed font-mono">
+                                                    [21:40] ADMIN: SECURITY BREACH AUTHENTICATED
+                                                </div>
+                                                <div className="text-[9px] font-bold uppercase leading-relaxed font-mono">
+                                                    [21:35] SYSTEM: NEW DEPLOYMENT AT NEON DISTRICT
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {activeTab === 'feeds' && (
+                                    <motion.div
+                                        key="feeds"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="space-y-4"
+                                    >
+                                        <div className="flex items-center justify-between mb-4 px-2">
+                                            <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Live Deployments</span>
+                                            <span className="text-[9px] font-black text-white/20 uppercase tracking-widest tabular-nums">{liveRaces.length}</span>
+                                        </div>
+                                        {liveRaces.map(race => (
+                                            <div key={race._id} className="p-5 bg-white/5 border border-white/10 rounded-2xl group hover:border-blue-600/40 transition-colors">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[10px] font-black italic uppercase tracking-tight text-white/60 truncate max-w-[200px]">{race.name}</span>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest italic">{race.sector}</span>
+                                                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest italic">{race.type}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {liveRaces.length === 0 && (
+                                            <div className="py-12 text-center">
+                                                <p className="text-[10px] font-black opacity-20 uppercase tracking-[0.3em] italic">No active neural links found.</p>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {/* B. Live Feed Grid */}
+                    <main className="flex-1 overflow-y-auto p-12 custom-scrollbar relative">
+                        <AnimatePresence mode="popLayout">
+                            <motion.div 
+                                layout
+                                className="grid grid-cols-1 xl:grid-cols-2 gap-10"
+                            >
+                                {liveRaces.map(race => (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        key={race._id}
+                                        className="relative"
+                                    >
+                                        <div className="absolute -top-4 -left-4 z-20 bg-blue-600 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-glow-primary shadow-blue-500/30">
+                                            {race.sector} // FEED ACTIVE
+                                        </div>
+                                        
+                                        <NeuralLink 
+                                            data={telemetry[race._id] || (race.telemetry && race.telemetry[0])} 
+                                            isActive={true} 
+                                        />
+                                        
+                                        <div className="mt-4 flex items-center justify-between px-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                                <span className="text-[10px] font-black italic uppercase tracking-tight text-white/40">{race.name}</span>
+                                            </div>
+                                            <button className="text-[8px] font-black text-blue-500 uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">
+                                                Analyze Stream
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {liveRaces.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center space-y-8">
+                                <div className="relative">
+                                    <div className="w-32 h-32 rounded-full border border-white/5 flex items-center justify-center">
+                                        <div className="w-24 h-24 rounded-full border border-white/10 animate-ping opacity-20" />
+                                    </div>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-16 h-16 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-500 text-2xl">📡</div>
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-xl font-black italic uppercase italic tracking-tighter mb-2 text-white/60">Waiting for Operations</h3>
+                                    <p className="text-[10px] font-black opacity-20 uppercase tracking-[0.4em] italic leading-relaxed">System standby. Monitor enabled. Establish neural link to begin broadcast.</p>
+                                </div>
+                            </div>
+                        )}
+                    </main>
                 </div>
-            </motion.div>
+            </div>
+
+            <style jsx="true">{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+
+                @keyframes scan {
+                    0% { transform: translateY(-100%); }
+                    100% { transform: translateY(100%); }
+                }
+            `}</style>
         </div>
     );
-}
+};
+
+export default WarRoom;

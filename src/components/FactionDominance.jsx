@@ -1,6 +1,29 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from "../config/api";
 
-export default function FactionDominance({ participants = [] }) {
+export default function FactionDominance({ participants = [], sectorName = null, userFaction = null }) {
+    const [territory, setTerritory] = useState(null);
+
+    useEffect(() => {
+        const fetchTerritory = async () => {
+            if (!sectorName) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/factions/territories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const sector = data.find(t => t.sectorName === sectorName);
+                    setTerritory(sector);
+                }
+            } catch (err) {
+                console.error("Failed to fetch territory in FactionDominance", err);
+            }
+        };
+        fetchTerritory();
+    }, [sectorName]);
+
+    const ownerFaction = territory?.currentOwner || 'None';
+    const isUserOwned = userFaction && userFaction === ownerFaction && ownerFaction !== 'None';
     // Factions to track
     const factions = ['Cyber Shadows', 'The Vanguard', 'Neon Pulse', 'Void Runners'];
     
@@ -42,9 +65,27 @@ export default function FactionDominance({ participants = [] }) {
                 <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-soft" />
                     <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white">Faction Dominance</h3>
+                    {sectorName && (
+                        <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Sector Control:</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest leading-none" style={{ color: ownerFaction !== 'None' ? (ownerFaction === 'Cyber Shadows' ? '#9333ea' : ownerFaction === 'The Vanguard' ? '#2563eb' : ownerFaction === 'Neon Pulse' ? '#16a34a' : '#dc2626') : '#94a3b8' }}>{ownerFaction}</span>
+                        </div>
+                    )}
                 </div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">
-                    Power Metrics: <span className="text-white">{participants.length} Operatives</span>
+                <div className="flex flex-col items-end gap-1">
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                        Power Metrics: <span className="text-white">{participants.length} Operatives</span>
+                    </div>
+                    {isUserOwned && (
+                        <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-[8px] font-black text-green-500 uppercase tracking-widest leading-none flex items-center gap-1"
+                        >
+                            <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
+                            XP Perk Active (+15%)
+                        </motion.div>
+                    )}
                 </div>
             </div>
 

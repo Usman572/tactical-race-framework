@@ -1,7 +1,110 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
+
+const NeuralGrid = () => {
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    const springConfig = { damping: 25, stiffness: 150 };
+    const x = useSpring(mouseX, springConfig);
+    const y = useSpring(mouseY, springConfig);
+
+    const rotateX = useTransform(y, [0, 800], [5, -5]);
+    const rotateY = useTransform(x, [0, 1200], [-5, 5]);
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            mouseX.set(e.clientX);
+            mouseY.set(e.clientY);
+        };
+        window.addEventListener("mousemove", handleMouseMove);
+        return () => window.removeEventListener("mousemove", handleMouseMove);
+    }, [mouseX, mouseY]);
+
+    return (
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            <motion.div 
+                style={{ 
+                    rotateX, 
+                    rotateY,
+                    perspective: 1000,
+                }}
+                className="absolute inset-[-20%] opacity-20"
+            >
+                <div 
+                    className="w-full h-full"
+                    style={{
+                        backgroundImage: `
+                            linear-gradient(to right, rgba(0, 243, 254, 0.15) 1px, transparent 1px),
+                            linear-gradient(to bottom, rgba(0, 243, 254, 0.15) 1px, transparent 1px)
+                        `,
+                        backgroundSize: '40px 40px',
+                    }}
+                />
+            </motion.div>
+            
+            {/* Dynamic Interactive Spotlight */}
+            <motion.div 
+                style={{ 
+                    left: x, 
+                    top: y,
+                    translateX: '-50%',
+                    translateY: '-50%'
+                }}
+                className="absolute w-[800px] h-[800px] bg-blue-500/10 blur-[120px] rounded-full mix-blend-screen"
+            />
+        </div>
+    );
+};
+
+const TargetingBrackets = ({ isFocused }) => {
+    return (
+        <AnimatePresence>
+            {isFocused && (
+                <div className="absolute -inset-2 pointer-events-none z-20">
+                    {/* Top Left */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -10, y: -10 }}
+                        animate={{ opacity: 1, x: 0, y: 0 }}
+                        exit={{ opacity: 0, x: -10, y: -10 }}
+                        className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500 rounded-sm"
+                    />
+                    {/* Top Right */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 10, y: -10 }}
+                        animate={{ opacity: 1, x: 0, y: 0 }}
+                        exit={{ opacity: 0, x: 10, y: -10 }}
+                        className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500 rounded-sm"
+                    />
+                    {/* Bottom Left */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -10, y: 10 }}
+                        animate={{ opacity: 1, x: 0, y: 0 }}
+                        exit={{ opacity: 0, x: -10, y: 10 }}
+                        className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-500 rounded-sm"
+                    />
+                    {/* Bottom Right */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 10, y: 10 }}
+                        animate={{ opacity: 1, x: 0, y: 0 }}
+                        exit={{ opacity: 0, x: 10, y: 10 }}
+                        className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500 rounded-sm"
+                    />
+                    
+                    {/* Focus Pulse Glow */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0, 0.1, 0] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="absolute inset-0 bg-blue-500/5 blur-xl rounded-2xl"
+                    />
+                </div>
+            )}
+        </AnimatePresence>
+    );
+};
 
 export default function Login() {
     const navigate = useNavigate();
@@ -10,6 +113,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [focusedField, setFocusedField] = useState(null);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -35,12 +139,8 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[var(--bg-main)] relative overflow-hidden">
-            {/* Cinematic Background Elements */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse-soft" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse-soft" style={{ animationDelay: '2s' }} />
-            </div>
-
+            <NeuralGrid />
+            
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -55,8 +155,26 @@ export default function Login() {
                     >
                         <span className="text-blue-500 text-[9px] font-black uppercase tracking-[0.3em]">Secure Auth Terminal // 04</span>
                     </motion.div>
-                    <h1 className="text-5xl font-black tracking-tighter text-[var(--text-main)] mb-4 italic uppercase">
-                        ACCESS <span className="text-blue-600">PORTAL</span>
+                    <h1 className="text-5xl font-black tracking-tighter text-[var(--text-main)] mb-4 italic uppercase relative group cursor-default">
+                        <span className="relative z-10">ACCESS <span className="text-blue-600 font-black">PORTAL</span></span>
+                        
+                        {/* Glitch Layers */}
+                        <motion.span 
+                            animate={{ 
+                                x: [-2, 2, -1, 0],
+                                opacity: [0, 0.3, 0.1, 0]
+                            }}
+                            transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3 }}
+                            className="absolute inset-0 text-red-500/40 z-0 select-none mix-blend-screen"
+                        >ACCESS PORTAL</motion.span>
+                        <motion.span 
+                            animate={{ 
+                                x: [2, -2, 1, 0],
+                                opacity: [0, 0.3, 0.2, 0]
+                            }}
+                            transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 2.5 }}
+                            className="absolute inset-0 text-cyan-500/40 z-0 select-none mix-blend-screen"
+                        >ACCESS PORTAL</motion.span>
                     </h1>
                     <p className="text-[var(--text-main)] opacity-40 text-sm font-bold uppercase tracking-widest italic">Identity verification required</p>
                     {error && (
@@ -82,30 +200,40 @@ export default function Login() {
                     <div className="relative z-10 space-y-6">
                         <div>
                             <label className="block text-[10px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em] mb-3 ml-1">Identity (Email)</label>
-                            <input
-                                type="email"
-                                required
-                                disabled={isSubmitting}
-                                className="w-full px-6 py-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] font-bold focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 outline-none transition-all placeholder:opacity-20 italic"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="operative@elite-circuit.net"
-                            />
+                            <div className="relative">
+                                <TargetingBrackets isFocused={focusedField === 'email'} />
+                                <input
+                                    type="email"
+                                    required
+                                    disabled={isSubmitting}
+                                    onFocus={() => setFocusedField('email')}
+                                    onBlur={() => setFocusedField(null)}
+                                    className="w-full px-6 py-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] font-bold focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 outline-none transition-all placeholder:opacity-20 italic relative z-10"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="operative@elite-circuit.net"
+                                />
+                            </div>
                         </div>
                         <div>
                             <div className="flex justify-between items-center mb-3 px-1">
                                 <label className="block text-[10px] font-black text-[var(--text-main)] opacity-30 uppercase tracking-[0.3em]">Access Code</label>
                                 <Link to="#" className="text-[9px] font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest">Recovery?</Link>
                             </div>
-                            <input
-                                type="password"
-                                required
-                                disabled={isSubmitting}
-                                className="w-full px-6 py-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] font-bold focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 outline-none transition-all placeholder:opacity-20 italic"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••••••"
-                            />
+                            <div className="relative">
+                                <TargetingBrackets isFocused={focusedField === 'password'} />
+                                <input
+                                    type="password"
+                                    required
+                                    disabled={isSubmitting}
+                                    onFocus={() => setFocusedField('password')}
+                                    onBlur={() => setFocusedField(null)}
+                                    className="w-full px-6 py-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-main)] text-[var(--text-main)] font-bold focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 outline-none transition-all placeholder:opacity-20 italic relative z-10"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••••••"
+                                />
+                            </div>
                         </div>
 
                         <button
