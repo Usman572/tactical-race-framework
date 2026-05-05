@@ -99,15 +99,24 @@ function MapController({ races, selectedSector }) {
         const filtered = races.filter(r => r.sector === selectedSector);
         if (filtered.length > 0) {
             let avgLat = 0, avgLon = 0;
+            let validCount = 0;
+            
             filtered.forEach(race => {
-                const [lat, lon] = generateMockCoords(race._id, race.sector);
-                avgLat += lat;
-                avgLon += lon;
+                if (race) {
+                    const [lat, lon] = generateMockCoords(race._id, race.sector);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        avgLat += lat;
+                        avgLon += lon;
+                        validCount++;
+                    }
+                }
             });
-            avgLat /= filtered.length;
-            avgLon /= filtered.length;
-
-            map.flyTo([avgLat, avgLon], 6, { duration: 2, easeLinearity: 0.1 });
+            
+            if (validCount > 0) {
+                avgLat /= validCount;
+                avgLon /= validCount;
+                map.flyTo([avgLat, avgLon], 6, { duration: 2, easeLinearity: 0.1 });
+            }
         }
     }, [selectedSector, races, map]);
 
@@ -128,7 +137,7 @@ export default function RaceMap({ races = [] }) {
                 const res = await fetch(`${API_BASE_URL}/api/factions/territories`);
                 if (res.ok) {
                     const data = await res.json();
-                    setTerritories(data);
+                    setTerritories(Array.isArray(data) ? data : []);
                 }
             } catch (err) {
                 console.error("Failed to fetch territories", err);
@@ -180,12 +189,14 @@ export default function RaceMap({ races = [] }) {
 
                 {/* Territory Polygons */}
                 {territories.map((territory) => {
+                    if (!territory || !territory.boundary || !Array.isArray(territory.boundary)) return null;
+                    
                     const ownerColor = factionColors[territory.currentOwner] || factionColors['None'];
                     const isFocused = selectedSector === territory.sectorName || selectedSector === 'ALL';
                     
                     return (
                         <Polygon
-                            key={territory._id}
+                            key={territory._id || Math.random()}
                             positions={territory.boundary}
                             pathOptions={{
                                 color: ownerColor,
