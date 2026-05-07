@@ -206,15 +206,21 @@ export default function RaceMap({ races = [] }) {
                 <MapController races={races} selectedSector={selectedSector} />
 
                 {/* Territory Polygons */}
-                {territories.map((territory) => {
-                    if (!territory || !territory.boundary || !Array.isArray(territory.boundary)) return null;
+                {territories.map((territory, idx) => {
+                    // Boundary Guard: Implemented a strict check to prevent Leaflet from reading indices of undefined boundaries
+                    if (!territory || !Array.isArray(territory.boundary) || territory.boundary.length === 0) {
+                        return null;
+                    }
                     
                     const ownerColor = factionColors[territory.currentOwner] || factionColors['None'];
                     const isFocused = selectedSector === territory.sectorName || selectedSector === 'ALL';
                     
+                    // Fallback Keys: Added deterministic keys to prevent reconciliation errors during refreshes
+                    const territoryKey = territory._id || `territory-${territory.sectorName || idx}-${idx}`;
+                    
                     return (
                         <Polygon
-                            key={territory._id || Math.random()}
+                            key={territoryKey}
                             positions={territory.boundary}
                             pathOptions={{
                                 color: ownerColor,
