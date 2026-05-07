@@ -91,31 +91,49 @@ function MapController({ races, selectedSector }) {
     const map = useMap();
 
     useEffect(() => {
+        // Robustness: Ensure map instance exists
+        if (!map) return;
+
         if (!selectedSector || selectedSector === 'ALL') {
              map.flyTo([20, 0], 3, { duration: 2, easeLinearity: 0.1 });
              return;
         }
 
-        const filtered = races.filter(r => r.sector === selectedSector);
+        // Safety: Filter races with null-checks
+        const filtered = Array.isArray(races) ? races.filter(r => r && r.sector === selectedSector) : [];
+        
         if (filtered.length > 0) {
             let avgLat = 0, avgLon = 0;
             let validCount = 0;
             
             filtered.forEach(race => {
-                if (race) {
-                    const [lat, lon] = generateMockCoords(race._id, race.sector);
-                    if (!isNaN(lat) && !isNaN(lon)) {
-                        avgLat += lat;
-                        avgLon += lon;
-                        validCount++;
+                if (race && race._id) {
+                    const coords = generateMockCoords(race._id, race.sector);
+                    if (Array.isArray(coords) && coords.length === 2) {
+                        const [lat, lon] = coords;
+                        // Coordinate Validation: isNaN checks on every calculated coordinate
+                        if (!isNaN(lat) && !isNaN(lon) && lat !== null && lon !== null) {
+                            avgLat += lat;
+                            avgLon += lon;
+                            validCount++;
+                        }
                     }
                 }
             });
             
+            // Active Count Verification: validCount tracker check
             if (validCount > 0) {
-                avgLat /= validCount;
-                avgLon /= validCount;
-                map.flyTo([avgLat, avgLon], 6, { duration: 2, easeLinearity: 0.1 });
+                const finalLat = avgLat / validCount;
+                const finalLon = avgLon / validCount;
+                
+                // Final validation before camera transition
+                if (!isNaN(finalLat) && !isNaN(finalLon)) {
+                    map.flyTo([finalLat, finalLon], 6, { duration: 2, easeLinearity: 0.1 });
+                } else {
+                    console.warn('[TacticalMap] Calculated invalid average coordinates:', { finalLat, finalLon, validCount });
+                }
+            } else {
+                console.info(`[TacticalMap] No valid coordinates found for sector: ${selectedSector}`);
             }
         }
     }, [selectedSector, races, map]);
