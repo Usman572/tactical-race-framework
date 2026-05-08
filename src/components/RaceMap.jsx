@@ -155,10 +155,15 @@ export default function RaceMap({ races = [] }) {
                 const res = await fetch(`${API_BASE_URL}/api/factions/territories`);
                 if (res.ok) {
                     const data = await res.json();
+                    // Array Verification: Standardize initialization to prevent downstream .map() failures
                     setTerritories(Array.isArray(data) ? data : []);
+                } else {
+                    console.warn('[DataUplink] Non-standard response detected for territories');
+                    setTerritories([]);
                 }
             } catch (err) {
-                console.error("Failed to fetch territories", err);
+                console.error("[DataUplink] Failed to synchronize territories - defaulting to empty array", err);
+                setTerritories([]);
             }
         };
         fetchTerritories();
