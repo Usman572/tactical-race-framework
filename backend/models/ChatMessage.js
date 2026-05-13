@@ -8,6 +8,9 @@ const chatMessageSchema = mongoose.Schema(
         text: { type: String, required: true },
         isEncrypted: { type: Boolean, default: true },
         messageType: { type: String, enum: ['Standard', 'Tactical', 'System'], default: 'Standard' },
+        type: { type: String, enum: ['Message', 'Image', 'Video', 'Audio'], default: 'Message' },
+        mediaUrl: { type: String },
+        read: { type: Boolean, default: false },
         timestamp: { type: Date, default: Date.now }
     },
     { timestamps: true }

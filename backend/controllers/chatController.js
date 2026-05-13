@@ -81,11 +81,24 @@ const sendPrivateMessage = async (req, res) => {
 
         if (!recipientId) return res.status(400).json({ message: 'Recipient required' });
 
+        let mediaUrl = null;
+        let type = 'Message';
+
+        if (req.file) {
+            mediaUrl = `/uploads/${req.file.filename}`;
+            const mime = req.file.mimetype;
+            if (mime.startsWith('image/')) type = 'Image';
+            else if (mime.startsWith('video/')) type = 'Video';
+            else if (mime.startsWith('audio/')) type = 'Audio';
+        }
+
         const message = await ChatMessage.create({
             user: senderId,
             recipient: recipientId,
-            text,
-            isEncrypted: true
+            text: text || `Sent a ${type.toLowerCase()}`,
+            mediaUrl,
+            type,
+            isEncrypted: !req.file // Don't scramble media notifications by default
         });
 
         const populatedMessage = await message.populate([
@@ -93,16 +106,27 @@ const sendPrivateMessage = async (req, res) => {
             { path: 'recipient', select: 'name profilePicture rank slug' }
         ]);
 
-        // Emit to both user rooms (for real-time update on both ends)
+        // Map for frontend compatibility (matches notificationController.js mapping)
+        const mappedMessage = {
+            _id: populatedMessage._id,
+            recipient: populatedMessage.recipient,
+            sender: populatedMessage.user,
+            message: populatedMessage.text,
+            type: populatedMessage.type,
+            mediaUrl: populatedMessage.mediaUrl,
+            read: populatedMessage.read,
+            createdAt: populatedMessage.createdAt,
+            updatedAt: populatedMessage.updatedAt
+        };
+
+        // Emit to both user rooms
         try {
-            const io = socketManager.getIO();
-            // Send to recipient
-            io.to(recipientId.toString()).emit('new_private_message', populatedMessage);
-            // Send back to sender (if they have multiple tabs/devices)
-            io.to(senderId.toString()).emit('new_private_message', populatedMessage);
+            const io = require('../socket').getIO();
+            io.to(recipientId.toString()).emit('new_private_message', mappedMessage);
+            io.to(senderId.toString()).emit('new_private_message', mappedMessage);
         } catch (err) {}
 
-        res.status(201).json(populatedMessage);
+        res.status(201).json(mappedMessage);
     } catch (err) {
         console.error('sendPrivateMessage error:', err);
         res.status(500).json({ message: 'Server error' });

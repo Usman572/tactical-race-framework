@@ -47,6 +47,18 @@ const init = (server) => {
             }
         });
 
+        socket.on('typing_start', (data) => {
+            if (data.recipientId) {
+                io.to(data.recipientId.toString()).emit('typing_start', { senderId: data.senderId });
+            }
+        });
+
+        socket.on('typing_stop', (data) => {
+            if (data.recipientId) {
+                io.to(data.recipientId.toString()).emit('typing_stop', { senderId: data.senderId });
+            }
+        });
+
         socket.on('disconnect', () => {
             console.log('User disconnected');
         });
