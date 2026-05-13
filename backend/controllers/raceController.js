@@ -760,6 +760,15 @@ const completeRace = async (req, res) => {
         const GlobalEvent = require('../models/GlobalEvent');
         const linkedEvent = await GlobalEvent.findOne({ linkedRaceId: race._id, isActive: true });
 
+        // Territory Control Logic
+        if (race.sector && Array.isArray(winners) && winners.length > 0) {
+            const winner = await User.findById(winners[0].user).select('faction');
+            if (winner && winner.faction && winner.faction !== 'None') {
+                const { updateInfluence } = require('./factionController');
+                await updateInfluence(race.sector, winner.faction, 100);
+            }
+        }
+
         if (linkedEvent && Array.isArray(winners)) {
             // Faction Dominance Logic: Top 3 finishers' factions get a boost
             const winningFactions = winners
