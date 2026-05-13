@@ -6,6 +6,7 @@ import { useRaces } from "../../context/RaceContext";
 import RaceMap from "../../components/RaceMap";
 import RaceCard from "../../components/RaceCard";
 import RaceCardSkeleton from "../../components/RaceCardSkeleton";
+import FactionDominance from "../../components/FactionDominance";
 import { useScroll, useTransform } from "framer-motion";
 import { API_BASE_URL } from "../../config/api";
 
@@ -228,6 +229,10 @@ export default function Home() {
 
                     <div className="rounded-[3rem] overflow-hidden border border-[var(--border-main)] shadow-2xl bg-[var(--header-bg)]">
                         <RaceMap races={races} />
+                    </div>
+
+                    <div className="mt-16">
+                        <FactionDominance />
                     </div>
                 </div>
             </section>
