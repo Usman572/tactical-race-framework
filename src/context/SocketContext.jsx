@@ -41,6 +41,10 @@ export function SocketProvider({ children }) {
                 });
 
                 newSocket.emit('join_room', user.id || user._id);
+                if (user.faction && user.faction !== 'None') {
+                    newSocket.emit('join_faction_chat', user.faction);
+                }
+                newSocket.emit('join_tactical_broadcasts');
             });
 
             setSocket(newSocket);

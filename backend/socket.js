@@ -40,6 +40,18 @@ const init = (server) => {
             console.log(`Administrator ${socket.id} joined global command feed`);
         });
 
+        socket.on('join_faction_chat', (factionName) => {
+            if (factionName && factionName !== 'None') {
+                socket.join(`faction_${factionName}`);
+                console.log(`Socket ${socket.id} joined faction room: faction_${factionName}`);
+            }
+        });
+
+        socket.on('join_tactical_broadcasts', () => {
+            socket.join('tactical_broadcasts');
+            console.log(`Socket ${socket.id} joined tactical broadcasts room`);
+        });
+
         socket.on('leave_race_chat', (raceId) => {
             if (raceId) {
                 socket.leave(`race_${raceId}`);
