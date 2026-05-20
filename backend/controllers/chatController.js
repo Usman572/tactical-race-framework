@@ -154,4 +154,146 @@ const getPrivateChat = async (req, res) => {
     }
 };
 
-module.exports = { getRaceChat, sendRaceMessage, sendPrivateMessage, getPrivateChat };
+const getFactionChat = async (req, res) => {
+    try {
+        const faction = req.user.faction;
+        if (!faction || faction === 'None') {
+            return res.status(400).json({ message: 'User is not part of a syndicate' });
+        }
+
+        const messages = await ChatMessage.find({
+            faction,
+            race: { $exists: false },
+            recipient: { $exists: false }
+        })
+        .populate('user', 'name profilePicture rank slug')
+        .sort({ createdAt: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('getFactionChat error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const sendFactionMessage = async (req, res) => {
+    try {
+        const { text, isHighPriority } = req.body;
+        const faction = req.user.faction;
+        const userId = req.user._id;
+
+        if (!faction || faction === 'None') {
+            return res.status(400).json({ message: 'User is not part of a syndicate' });
+        }
+
+        const message = await ChatMessage.create({
+            user: userId,
+            faction,
+            text,
+            isEncrypted: isHighPriority === true,
+            isHighPriority: isHighPriority === true,
+            messageType: 'Standard'
+        });
+
+        const populatedMessage = await message.populate('user', 'name profilePicture rank slug');
+
+        // Emit to faction socket room
+        try {
+            const io = socketManager.getIO();
+            io.to(`faction_${faction}`).emit('new_faction_message', populatedMessage);
+        } catch (socketErr) {
+            console.error('Faction Socket emit failed:', socketErr);
+        }
+
+        res.status(201).json(populatedMessage);
+    } catch (err) {
+        console.error('sendFactionMessage error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getTacticalBroadcasts = async (req, res) => {
+    try {
+        const messages = await ChatMessage.find({
+            isTacticalBroadcast: true
+        })
+        .populate('user', 'name profilePicture rank slug')
+        .sort({ createdAt: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('getTacticalBroadcasts error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const sendTacticalBroadcast = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Only administrators can broadcast tactical alerts' });
+        }
+
+        const { text, isHighPriority } = req.body;
+        const userId = req.user._id;
+
+        const message = await ChatMessage.create({
+            user: userId,
+            isTacticalBroadcast: true,
+            text,
+            isEncrypted: isHighPriority === true,
+            isHighPriority: isHighPriority === true,
+            messageType: 'Tactical'
+        });
+
+        const populatedMessage = await message.populate('user', 'name profilePicture rank slug');
+
+        // Emit to tactical broadcast room
+        try {
+            const io = socketManager.getIO();
+            io.to('tactical_broadcasts').emit('new_tactical_broadcast', populatedMessage);
+        } catch (socketErr) {
+            console.error('Broadcast Socket emit failed:', socketErr);
+        }
+
+        res.status(201).json(populatedMessage);
+    } catch (err) {
+        console.error('sendTacticalBroadcast error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const decryptMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const userId = req.user._id;
+
+        const message = await ChatMessage.findById(messageId);
+        if (!message) {
+            return res.status(404).json({ message: 'Transmission not found' });
+        }
+
+        // Add user to decryptedBy list
+        if (!message.decryptedBy.includes(userId)) {
+            message.decryptedBy.push(userId);
+            await message.save();
+        }
+
+        const populatedMessage = await message.populate('user', 'name profilePicture rank slug');
+        res.json(populatedMessage);
+    } catch (err) {
+        console.error('decryptMessage error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { 
+    getRaceChat, 
+    sendRaceMessage, 
+    sendPrivateMessage, 
+    getPrivateChat,
+    getFactionChat,
+    sendFactionMessage,
+    getTacticalBroadcasts,
+    sendTacticalBroadcast,
+    decryptMessage
+};
