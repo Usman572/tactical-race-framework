@@ -47,6 +47,12 @@ const init = (server) => {
             }
         });
 
+        socket.on('global_mission_pulse', (payload) => {
+            // Emits to all connected clients
+            io.emit('incoming_mission_pulse', payload);
+            console.log(`Admin ${socket.id} triggered a global mission pulse:`, payload);
+        });
+
         socket.on('disconnect', () => {
             console.log('User disconnected');
         });

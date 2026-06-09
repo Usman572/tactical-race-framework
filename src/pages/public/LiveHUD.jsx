@@ -62,7 +62,11 @@ export default function LiveHUD() {
                     sendTelemetryPulse(race._id, {
                         progress: Math.min(100, (myTelem?.progress || 0) + (Math.random() * 2)),
                         speed: 80 + Math.floor(Math.random() * 120),
-                        status: 'En Route'
+                        status: 'En Route',
+                        location: {
+                            lat: 20 + (Math.random() * 10 - 5),
+                            lng: 0 + (Math.random() * 10 - 5)
+                        }
                     });
                 }, 3000);
             };
@@ -136,7 +140,11 @@ export default function LiveHUD() {
                             userId: pId, // Admin can update anyone in this simulation mode
                             progress: Math.min(100, currentProgress + (Math.random() * 5)),
                             speed: 120 + Math.floor(Math.random() * 150),
-                            status: currentProgress + 5 >= 100 ? 'Finished' : 'En Route'
+                            status: currentProgress + 5 >= 100 ? 'Finished' : 'En Route',
+                            location: {
+                                lat: 20 + (Math.random() * 10 - 5),
+                                lng: 0 + (Math.random() * 10 - 5)
+                            }
                         });
                     }
                 });

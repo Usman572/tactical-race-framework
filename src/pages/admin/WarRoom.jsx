@@ -3,7 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { API_BASE_URL } from '../../config/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import NeuralLink from '../../components/NeuralLink';
+
+// Map marker for operative
+const operativeIcon = new L.DivIcon({
+    className: 'operative-marker',
+    html: `<div class="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-[0_0_15px_rgba(59,130,246,0.8)] flex items-center justify-center animate-pulse"><div class="w-2 h-2 bg-white rounded-full"></div></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+});
 
 const WarRoom = () => {
     const { user } = useAuth();
@@ -30,7 +40,8 @@ const WarRoom = () => {
                     const initialTelem = {};
                     data.forEach(race => {
                         if (race.telemetry && race.telemetry.length > 0) {
-                            initialTelem[race._id] = race.telemetry[0]; // Just track lead for now
+                            // Store an array of all telemetry items for the race
+                            initialTelem[race._id] = race.telemetry;
                         }
                     });
                     setTelemetry(initialTelem);
@@ -52,10 +63,16 @@ const WarRoom = () => {
         socket.emit('join_admin_feed');
 
         socket.on('telemetry_pulse', ({ raceId, telemetry: data }) => {
-            setTelemetry(prev => ({
-                ...prev,
-                [raceId]: data
-            }));
+            setTelemetry(prev => {
+                const raceTelem = prev[raceId] ? [...prev[raceId]] : [];
+                const idx = raceTelem.findIndex(t => (t.user?._id || t.user) === (data.user?._id || data.user));
+                if (idx > -1) {
+                    raceTelem[idx] = data;
+                } else {
+                    raceTelem.push(data);
+                }
+                return { ...prev, [raceId]: raceTelem };
+            });
         });
 
         socket.on('race_completed', (completedRace) => {
@@ -104,6 +121,14 @@ const WarRoom = () => {
                 })
             });
             if (res.ok) {
+                // Also trigger instant global pulse via socket
+                if (socket) {
+                    socket.emit('global_mission_pulse', {
+                        message: broadcastMsg,
+                        type: alertType,
+                        timestamp: new Date()
+                    });
+                }
                 setBroadcastMsg('');
                 // Pulse feedback
             }
@@ -254,6 +279,51 @@ const WarRoom = () => {
                                         )}
                                     </motion.div>
                                 )}
+
+                                {activeTab === 'intel' && (
+                                    <motion.div
+                                        key="intel"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="h-[500px] w-full rounded-2xl overflow-hidden border border-white/10 relative group"
+                                    >
+                                        <div className="absolute top-4 left-4 z-[1000] bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-blue-500/30">
+                                            <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Live Asset Tracking</span>
+                                        </div>
+                                        <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%', background: '#020617' }} zoomControl={false}>
+                                            <TileLayer
+                                                url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+                                                className="opacity-80 mix-blend-screen"
+                                            />
+                                            {/* Render all operatives with location data */}
+                                            {Object.values(telemetry).flat().map((telem, i) => {
+                                                if (telem?.location?.lat && telem?.location?.lng) {
+                                                    return (
+                                                        <Marker 
+                                                            key={telem.user?._id || telem.user || i} 
+                                                            position={[telem.location.lat, telem.location.lng]}
+                                                            icon={operativeIcon}
+                                                        >
+                                                            <Popup className="bg-slate-900 text-white border border-blue-500/30">
+                                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">
+                                                                    Operative Link
+                                                                </div>
+                                                                <div className="text-[9px] font-bold opacity-70">
+                                                                    Status: {telem.status}<br/>
+                                                                    Heart Rate: {telem.heartRate} BPM<br/>
+                                                                    Sync: {telem.syncLevel}%
+                                                                </div>
+                                                            </Popup>
+                                                        </Marker>
+                                                    );
+                                                }
+                                                return null;
+                                            })}
+                                        </MapContainer>
+                                        <div className="absolute inset-0 pointer-events-none z-[400] mix-blend-overlay opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(0, 243, 254, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 254, 0.2) 1px, transparent 1px)', backgroundSize: '50px 50px'}}></div>
+                                    </motion.div>
+                                )}
                             </AnimatePresence>
                         </div>
                     </div>
@@ -279,7 +349,7 @@ const WarRoom = () => {
                                         </div>
                                         
                                         <NeuralLink 
-                                            data={telemetry[race._id] || (race.telemetry && race.telemetry[0])} 
+                                            data={telemetry[race._id]?.[0] || (race.telemetry && race.telemetry[0])} 
                                             isActive={true} 
                                         />
                                         
