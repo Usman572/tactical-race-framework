@@ -35,7 +35,7 @@ const registerUser = async (req, res) => {
         const user = await User.create({ name, email, password: hashed, slug, role: role || 'user' });
 
         const token = generateToken(user);
-        res.status(201).json({ id: user._id, name: user.name, email: user.email, role: user.role, slug: user.slug, profilePicture: user.profilePicture, token });
+        res.status(201).json({ id: user._id, name: user.name, email: user.email, role: user.role, slug: user.slug, profilePicture: user.profilePicture, token, faction: user.faction });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -98,7 +98,7 @@ const loginUser = async (req, res) => {
         
         await user.save();
 
-        res.json({ id: user._id, name: user.name, email: user.email, role: user.role, slug: user.slug, profilePicture: user.profilePicture, token });
+        res.json({ id: user._id, name: user.name, email: user.email, role: user.role, slug: user.slug, profilePicture: user.profilePicture, token, faction: user.faction });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

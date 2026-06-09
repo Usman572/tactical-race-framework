@@ -412,10 +412,24 @@ export function RaceProvider({ children }) {
             return matchesSector && matchesType && matchesDistance;
         });
     }, [races, filters]);
+    const updateFilter = (key, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            sectors: [],
+            types: [],
+            maxDistance: 1000
+        });
+    };
 
     return (
         <RaceContext.Provider value={{ 
-            races, filteredRaces, filters, setFilters, fetchRaces, getRaceById, addRace, updateRace, deleteRace, joinRace, leaveRace, isLoading,
+            races, filteredRaces, filters, setFilters, updateFilter, clearFilters, fetchRaces, getRaceById, addRace, updateRace, deleteRace, joinRace, leaveRace, isLoading,
             pendingRequests, fetchPendingRequests, myRequests, fetchMyRequests, requestToJoin, approveRequest, rejectRequest,
             unreadCount, fetchUnreadCount,
             checkIn, startCountdown, completeRace, sendTelemetryPulse, sendRaceCommand

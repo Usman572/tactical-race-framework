@@ -81,11 +81,24 @@ const sendPrivateMessage = async (req, res) => {
 
         if (!recipientId) return res.status(400).json({ message: 'Recipient required' });
 
+        let mediaUrl = null;
+        let type = 'Message';
+
+        if (req.file) {
+            mediaUrl = `/uploads/${req.file.filename}`;
+            const mime = req.file.mimetype;
+            if (mime.startsWith('image/')) type = 'Image';
+            else if (mime.startsWith('video/')) type = 'Video';
+            else if (mime.startsWith('audio/')) type = 'Audio';
+        }
+
         const message = await ChatMessage.create({
             user: senderId,
             recipient: recipientId,
-            text,
-            isEncrypted: true
+            text: text || `Sent a ${type.toLowerCase()}`,
+            mediaUrl,
+            type,
+            isEncrypted: !req.file // Don't scramble media notifications by default
         });
 
         const populatedMessage = await message.populate([
@@ -93,16 +106,27 @@ const sendPrivateMessage = async (req, res) => {
             { path: 'recipient', select: 'name profilePicture rank slug' }
         ]);
 
-        // Emit to both user rooms (for real-time update on both ends)
+        // Map for frontend compatibility (matches notificationController.js mapping)
+        const mappedMessage = {
+            _id: populatedMessage._id,
+            recipient: populatedMessage.recipient,
+            sender: populatedMessage.user,
+            message: populatedMessage.text,
+            type: populatedMessage.type,
+            mediaUrl: populatedMessage.mediaUrl,
+            read: populatedMessage.read,
+            createdAt: populatedMessage.createdAt,
+            updatedAt: populatedMessage.updatedAt
+        };
+
+        // Emit to both user rooms
         try {
-            const io = socketManager.getIO();
-            // Send to recipient
-            io.to(recipientId.toString()).emit('new_private_message', populatedMessage);
-            // Send back to sender (if they have multiple tabs/devices)
-            io.to(senderId.toString()).emit('new_private_message', populatedMessage);
+            const io = require('../socket').getIO();
+            io.to(recipientId.toString()).emit('new_private_message', mappedMessage);
+            io.to(senderId.toString()).emit('new_private_message', mappedMessage);
         } catch (err) {}
 
-        res.status(201).json(populatedMessage);
+        res.status(201).json(mappedMessage);
     } catch (err) {
         console.error('sendPrivateMessage error:', err);
         res.status(500).json({ message: 'Server error' });
@@ -130,4 +154,146 @@ const getPrivateChat = async (req, res) => {
     }
 };
 
-module.exports = { getRaceChat, sendRaceMessage, sendPrivateMessage, getPrivateChat };
+const getFactionChat = async (req, res) => {
+    try {
+        const faction = req.user.faction;
+        if (!faction || faction === 'None') {
+            return res.status(400).json({ message: 'User is not part of a syndicate' });
+        }
+
+        const messages = await ChatMessage.find({
+            faction,
+            race: { $exists: false },
+            recipient: { $exists: false }
+        })
+        .populate('user', 'name profilePicture rank slug')
+        .sort({ createdAt: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('getFactionChat error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const sendFactionMessage = async (req, res) => {
+    try {
+        const { text, isHighPriority } = req.body;
+        const faction = req.user.faction;
+        const userId = req.user._id;
+
+        if (!faction || faction === 'None') {
+            return res.status(400).json({ message: 'User is not part of a syndicate' });
+        }
+
+        const message = await ChatMessage.create({
+            user: userId,
+            faction,
+            text,
+            isEncrypted: isHighPriority === true,
+            isHighPriority: isHighPriority === true,
+            messageType: 'Standard'
+        });
+
+        const populatedMessage = await message.populate('user', 'name profilePicture rank slug');
+
+        // Emit to faction socket room
+        try {
+            const io = socketManager.getIO();
+            io.to(`faction_${faction}`).emit('new_faction_message', populatedMessage);
+        } catch (socketErr) {
+            console.error('Faction Socket emit failed:', socketErr);
+        }
+
+        res.status(201).json(populatedMessage);
+    } catch (err) {
+        console.error('sendFactionMessage error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getTacticalBroadcasts = async (req, res) => {
+    try {
+        const messages = await ChatMessage.find({
+            isTacticalBroadcast: true
+        })
+        .populate('user', 'name profilePicture rank slug')
+        .sort({ createdAt: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('getTacticalBroadcasts error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const sendTacticalBroadcast = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Only administrators can broadcast tactical alerts' });
+        }
+
+        const { text, isHighPriority } = req.body;
+        const userId = req.user._id;
+
+        const message = await ChatMessage.create({
+            user: userId,
+            isTacticalBroadcast: true,
+            text,
+            isEncrypted: isHighPriority === true,
+            isHighPriority: isHighPriority === true,
+            messageType: 'Tactical'
+        });
+
+        const populatedMessage = await message.populate('user', 'name profilePicture rank slug');
+
+        // Emit to tactical broadcast room
+        try {
+            const io = socketManager.getIO();
+            io.to('tactical_broadcasts').emit('new_tactical_broadcast', populatedMessage);
+        } catch (socketErr) {
+            console.error('Broadcast Socket emit failed:', socketErr);
+        }
+
+        res.status(201).json(populatedMessage);
+    } catch (err) {
+        console.error('sendTacticalBroadcast error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const decryptMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const userId = req.user._id;
+
+        const message = await ChatMessage.findById(messageId);
+        if (!message) {
+            return res.status(404).json({ message: 'Transmission not found' });
+        }
+
+        // Add user to decryptedBy list
+        if (!message.decryptedBy.includes(userId)) {
+            message.decryptedBy.push(userId);
+            await message.save();
+        }
+
+        const populatedMessage = await message.populate('user', 'name profilePicture rank slug');
+        res.json(populatedMessage);
+    } catch (err) {
+        console.error('decryptMessage error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { 
+    getRaceChat, 
+    sendRaceMessage, 
+    sendPrivateMessage, 
+    getPrivateChat,
+    getFactionChat,
+    sendFactionMessage,
+    getTacticalBroadcasts,
+    sendTacticalBroadcast,
+    decryptMessage
+};

@@ -7,6 +7,7 @@ const SocketContext = createContext();
 
 export function SocketProvider({ children }) {
     const [socket, setSocket] = useState(null);
+    const [typingStatus, setTypingStatus] = useState({}); // { senderId: boolean }
     const { user } = useAuth();
 
     useEffect(() => {
@@ -17,34 +18,40 @@ export function SocketProvider({ children }) {
 
     useEffect(() => {
         if (user) {
-            // Extract the base URL from API_BASE_URL (removing /api or similar if present)
             const socketUrl = API_BASE_URL.replace('/api', '');
             const newSocket = io(socketUrl, {
                 withCredentials: true,
                 transports: ['websocket']
             });
 
-            newSocket.on('connect_error', (err) => {
-                console.error('Socket connection error:', err.message);
-            });
-
             newSocket.on('connect', () => {
-                console.log('Socket established for session:', user.id);
-                newSocket.off('new_notification'); // Clear existing listeners
+                newSocket.off('new_notification');
                 newSocket.on('new_notification', (data) => {
                     if (document.hidden && Notification.permission === "granted") {
                         new Notification("New Signal", { body: data.message });
                     }
                 });
+
+                newSocket.on('typing_start', ({ senderId }) => {
+                    setTypingStatus(prev => ({ ...prev, [senderId]: true }));
+                });
+
+                newSocket.on('typing_stop', ({ senderId }) => {
+                    setTypingStatus(prev => ({ ...prev, [senderId]: false }));
+                });
+
                 newSocket.emit('join_room', user.id || user._id);
+                if (user.faction && user.faction !== 'None') {
+                    newSocket.emit('join_faction_chat', user.faction);
+                }
+                newSocket.emit('join_tactical_broadcasts');
             });
 
             setSocket(newSocket);
 
             return () => {
-                newSocket.off(); // Remove all listeners
+                newSocket.off();
                 newSocket.disconnect();
-                console.log('Socket session ended');
             };
         } else {
             if (socket) {
@@ -55,12 +62,18 @@ export function SocketProvider({ children }) {
     }, [user]);
 
     return (
-        <SocketContext.Provider value={socket}>
+        <SocketContext.Provider value={{ socket, typingStatus }}>
             {children}
         </SocketContext.Provider>
     );
 }
 
 export function useSocket() {
-    return useContext(SocketContext);
+    const context = useContext(SocketContext);
+    return context?.socket;
+}
+
+export function useTypingStatus() {
+    const context = useContext(SocketContext);
+    return context?.typingStatus;
 }

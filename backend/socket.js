@@ -40,6 +40,18 @@ const init = (server) => {
             console.log(`Administrator ${socket.id} joined global command feed`);
         });
 
+        socket.on('join_faction_chat', (factionName) => {
+            if (factionName && factionName !== 'None') {
+                socket.join(`faction_${factionName}`);
+                console.log(`Socket ${socket.id} joined faction room: faction_${factionName}`);
+            }
+        });
+
+        socket.on('join_tactical_broadcasts', () => {
+            socket.join('tactical_broadcasts');
+            console.log(`Socket ${socket.id} joined tactical broadcasts room`);
+        });
+
         socket.on('leave_race_chat', (raceId) => {
             if (raceId) {
                 socket.leave(`race_${raceId}`);
@@ -47,10 +59,16 @@ const init = (server) => {
             }
         });
 
-        socket.on('global_mission_pulse', (payload) => {
-            // Emits to all connected clients
-            io.emit('incoming_mission_pulse', payload);
-            console.log(`Admin ${socket.id} triggered a global mission pulse:`, payload);
+        socket.on('typing_start', (data) => {
+            if (data.recipientId) {
+                io.to(data.recipientId.toString()).emit('typing_start', { senderId: data.senderId });
+            }
+        });
+
+        socket.on('typing_stop', (data) => {
+            if (data.recipientId) {
+                io.to(data.recipientId.toString()).emit('typing_stop', { senderId: data.senderId });
+            }
         });
 
         socket.on('disconnect', () => {

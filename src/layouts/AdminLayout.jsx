@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useRaces } from "../context/RaceContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Breadcrumbs from "../components/Breadcrumbs";
+import XPPulse from "../components/XPPulse";
 import PageTransition from "../components/PageTransition";
 import LatencyIndicator from "../components/LatencyIndicator";
 import ThemeToggle from "../components/ThemeToggle";
@@ -153,6 +154,8 @@ export default function AdminLayout() {
           <div className="max-w-7xl mx-auto pb-20 lg:pb-0">
             <AnimatePresence mode="wait">
               <PageTransition key={location.pathname}>
+                <Breadcrumbs />
+                <XPPulse />
                 <Outlet />
               </PageTransition>
             </AnimatePresence>

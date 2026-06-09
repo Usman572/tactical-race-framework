@@ -2,6 +2,7 @@ import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useRaces } from "../context/RaceContext";
 import Breadcrumbs from "../components/Breadcrumbs";
+import XPPulse from "../components/XPPulse";
 
 export default function PartnerLayout() {
   const { user, logout } = useAuth();
@@ -88,6 +89,7 @@ export default function PartnerLayout() {
       {/* Main content */}
       <main className="flex-1 p-8 bg-[var(--bg-main)] overflow-y-auto transition-colors duration-500">
         <Breadcrumbs />
+        <XPPulse />
         <Outlet />
       </main>
     </div>
