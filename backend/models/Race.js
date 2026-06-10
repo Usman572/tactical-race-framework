@@ -17,6 +17,10 @@ const raceSchema = mongoose.Schema(
         currentLap: { type: Number, default: 0 },
         telemetry: [{
             user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            location: {
+                lat: { type: Number },
+                lng: { type: Number }
+            },
             progress: { type: Number, default: 0 }, // 0 to 100
             lap: { type: Number, default: 1 },
             speed: { type: Number, default: 0 },
